@@ -1,0 +1,11 @@
+WAREHOUSE_ID,WAREHOUSE_CODE,WAREHOUSE_NAME,LOCATION,CAPACITY,STATUS
+1,WH-001,Tokyo Main Warehouse,"Tokyo, Shinagawa",10000,ACTIVE
+2,WH-002,Osaka Distribution Center,"Osaka, Sakai",8000,ACTIVE
+3,WH-003,Nagoya Logistics Hub,"Nagoya, Minato",6000,ACTIVE
+4,WH-004,Fukuoka Regional Warehouse,"Fukuoka, Hakata",5000,ACTIVE
+5,WH-005,Sapporo Cold Storage,"Sapporo, Higashi",3000,ACTIVE
+6,WH-006,Yokohama Port Warehouse,"Yokohama, Tsurumi",12000,ACTIVE
+7,WH-007,Kobe Distribution Center,"Kobe, Chuo",7000,ACTIVE
+8,WH-008,Sendai Regional Hub,"Sendai, Miyagino",4000,ACTIVE
+9,WH-009,Hiroshima Warehouse,"Hiroshima, Minami",5500,ACTIVE
+10,WH-010,Temporary Storage Facility,"Tokyo, Edogawa",2000,MAINTENANCE

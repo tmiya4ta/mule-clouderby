@@ -1,0 +1,18 @@
+# clouderby Embedded Mule App Configuration
+
+http:
+  port: "8081"
+
+# Derby embedded connection (directory-based)
+derby:
+  path: "/tmp/data/appdb"
+
+# Authentication
+clouderby:
+  user: "mule"
+  password: "mule123"
+
+# Database initialization (CNET schema + sample data)
+db:
+  init:
+    enabled: "true"

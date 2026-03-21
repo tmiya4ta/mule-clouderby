@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+      xmlns:http="http://www.mulesoft.org/schema/mule/http"
+      xmlns:spring="http://www.mulesoft.org/schema/mule/spring"
+      xmlns:java="http://www.mulesoft.org/schema/mule/java"
+      xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit"
+      xsi:schemaLocation="
+        http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+        http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+        http://www.mulesoft.org/schema/mule/spring http://www.mulesoft.org/schema/mule/spring/current/mule-spring.xsd
+        http://www.mulesoft.org/schema/mule/java http://www.mulesoft.org/schema/mule/java/current/mule-java.xsd
+        http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd">
+
+    <!-- Environment Property -->
+    <global-property doc:name="mule.env" name="mule.env" value="cloudhub"/>
+
+    <!-- Configuration Properties -->
+    <configuration-properties doc:name="Configuration properties" file="config/config-${mule.env}.yaml"/>
+
+    <!-- Spring: Auto-init database on startup, session manager, SQL executor -->
+    <spring:config name="springConfig" files="spring-config.xml"/>
+
+    <!-- HTTP Listener Config -->
+    <http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config">
+        <http:listener-connection host="0.0.0.0" port="${http.port}"/>
+    </http:listener-config>
+
+    <!-- APIKit Config -->
+    <apikit:config name="clouderby-api-config" api="api/clouderby-api.yaml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus"/>
+
+    <!-- API Error Handler (Java invocation errors from implementation flows) -->
+    <!-- Uses on-error-propagate so error reaches the router flow's error handler -->
+    <error-handler name="api-error-handler">
+        <on-error-propagate type="ANY"/>
+    </error-handler>
+
+    <!-- Global Error Handler -->
+    <error-handler name="global-error-handler">
+        <on-error-propagate type="JAVA:INVOCATION">
+            <set-variable variableName="httpStatus" value="500"/>
+            <set-payload value='#[output application/json --- {error: "Database error: " ++ (error.cause.message default error.description)}]'/>
+        </on-error-propagate>
+        <on-error-propagate type="ANY">
+            <set-variable variableName="httpStatus" value="500"/>
+            <set-payload value='#[output application/json --- {error: "Internal server error", message: error.description}]'/>
+        </on-error-propagate>
+    </error-handler>
+
+</mule>

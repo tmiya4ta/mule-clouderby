@@ -1,0 +1,6 @@
+PROJECT_ID,MILESTONE_NAME,TARGET_DATE,ACTUAL_DATE,STATUS,DESCRIPTION
+1,合金組成決定,2025-09-30,2025-09-25,COMPLETED,基礎研究完了、最適合金組成の決定
+1,試作品評価完了,2026-03-31,,IN_PROGRESS,試作品の機械的特性評価完了
+1,量産試作開始,2026-07-31,,PENDING,量産ラインでの試作開始
+2,現状分析完了,2025-09-30,2025-10-05,COMPLETED,現行プロセスのボトルネック特定
+2,改善案策定,2026-01-31,,IN_PROGRESS,3つの改善案の策定と評価

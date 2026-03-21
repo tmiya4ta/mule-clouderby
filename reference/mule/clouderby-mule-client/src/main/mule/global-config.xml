@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+      xmlns:http="http://www.mulesoft.org/schema/mule/http"
+      xmlns:db="http://www.mulesoft.org/schema/mule/db"
+      xsi:schemaLocation="
+        http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+        http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+        http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+
+    <!-- Environment Property (default: local for standalone, override with -Dmule.env=cloudhub for CloudHub) -->
+    <global-property doc:name="mule.env" name="mule.env" value="local"/>
+
+    <!-- Configuration Properties -->
+    <configuration-properties doc:name="Configuration properties" file="config/config-${mule.env}.yaml"/>
+
+    <!-- HTTP Listener Config (port 8082 for client app) -->
+    <http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config">
+        <http:listener-connection host="0.0.0.0" port="${http.port}"/>
+    </http:listener-config>
+
+    <!-- clouderby Database Config (REMOTE mode - connects to existing server) -->
+    <db:config name="Database_Config" doc:name="Database Config">
+        <db:generic-connection
+            url="jdbc:clouderby://${clouderby.host}:${clouderby.port}/${clouderby.database}?secure=${clouderby.secure}&amp;debug=${clouderby.debug}"
+            driverClassName="com.muledev.jdbc.ClouderbyDriver"
+            user="${clouderby.user}"
+            password="${clouderby.password}"/>
+    </db:config>
+
+    <!-- Global Error Handler -->
+    <error-handler name="global-error-handler">
+        <on-error-propagate type="DB:CONNECTIVITY">
+            <set-variable variableName="httpStatus" value="503"/>
+            <set-payload value='#[output application/json --- {error: "Database connection failed (remote server)", message: error.description}]'/>
+        </on-error-propagate>
+        <on-error-propagate type="ANY">
+            <set-variable variableName="httpStatus" value="500"/>
+            <set-payload value='#[output application/json --- {error: "Internal server error", message: error.description}]'/>
+        </on-error-propagate>
+    </error-handler>
+
+</mule>

@@ -1,0 +1,11 @@
+CUSTOMER_ID,CUSTOMER_CODE,CUSTOMER_NAME,CUSTOMER_NAME_KANA,CUSTOMER_NAME_EN,CUSTOMER_TYPE,EMAIL,PHONE,ADDRESS,CREDIT_LIMIT,PAYMENT_TERMS,TAX_ID
+C001,CUST-001,旭日精工株式会社,アサヒセイコウ,Asahi Seiko,ENTERPRISE,contact@asahi-seiko.co.jp,03-3456-0001,"東京都大田区南蒲田1-1-1",1000000,NET30,T1234567890123
+C002,CUST-002,株式会社光陽テクノ,コウヨウテクノ,Koyo Techno,SME,info@koyo-techno.co.jp,06-6789-0002,"大阪府東大阪市長田東3-2-5",500000,NET30,T2345678901234
+C003,CUST-003,三和マテリアル株式会社,サンワマテリアル,Sanwa Material,ENTERPRISE,procurement@sanwa-mat.co.jp,052-345-0003,"愛知県名古屋市港区金城ふ頭2-7",2000000,NET45,T3456789012345
+C004,CUST-004,株式会社鶴見精密,ツルミセイミツ,Tsurumi Precision,SME,orders@tsurumi-prec.co.jp,075-432-0004,"京都府京都市南区上鳥羽角田町68",750000,NET30,T4567890123456
+C005,CUST-005,ネオブライト株式会社,ネオブライト,Neo Bright,STARTUP,hello@neobright.co.jp,092-567-0005,"福岡県福岡市博多区博多駅前4-8",250000,NET15,T5678901234567
+C006,CUST-006,大和重工業株式会社,ヤマトジュウコウギョウ,Yamato Heavy Industries,ENTERPRISE,purchasing@yamato-juko.co.jp,078-234-0006,"兵庫県神戸市中央区港島南町7-1",3000000,NET60,T6789012345678
+C007,CUST-007,株式会社海洋エンジニアリング,カイヨウエンジニアリング,Kaiyo Engineering,SME,sales@kaiyo-eng.co.jp,045-678-0007,"神奈川県横浜市金沢区福浦1-5-2",600000,NET30,T7890123456789
+C008,CUST-008,株式会社クレスト電子,クレストデンシ,Crest Denshi,STARTUP,contact@crest-denshi.co.jp,048-890-0008,"埼玉県さいたま市大宮区桜木町2-3",300000,NET15,T8901234567890
+C009,CUST-009,東洋機械工業株式会社,トウヨウキカイコウギョウ,Toyo Kikai Kogyo,ENTERPRISE,orders@toyo-kikai.co.jp,044-123-0009,"神奈川県川崎市川崎区殿町3-25",1500000,NET45,T9012345678901
+C010,CUST-010,株式会社北斗システムズ,ホクトシステムズ,Hokuto Systems,SME,info@hokuto-sys.co.jp,011-456-0010,"北海道札幌市中央区北5条西6-1",800000,NET30,T0123456789012

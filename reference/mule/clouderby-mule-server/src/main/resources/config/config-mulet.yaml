@@ -1,0 +1,18 @@
+# clouderby Server App Configuration for mulet
+
+http:
+  port: "9081"
+
+# Derby embedded connection (different path to avoid lock conflict with Mule standalone)
+derby:
+  path: "/tmp/data/mulet-appdb"
+
+# Authentication
+clouderby:
+  user: "mule"
+  password: "mule123"
+
+# Database initialization (CNET schema + sample data)
+db:
+  init:
+    enabled: "true"

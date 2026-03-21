@@ -1,0 +1,201 @@
+PRODUCT_ID,PRODUCT_CODE,PRODUCT_NAME,PRODUCT_TYPE,UNIT,UNIT_PRICE,DESCRIPTION
+P001,PROD-001,鋼板 1mm,RAW_MATERIAL,kg,150,高品質冷間圧延鋼板 板厚1mm
+P002,PROD-002,アルミ合金 5052,RAW_MATERIAL,kg,450,アルミニウム合金5052系
+P003,PROD-003,銅線 2.5mm,RAW_MATERIAL,meter,25,銅線 線径2.5mm
+P004,PROD-004,ステンレス鋼 304,RAW_MATERIAL,kg,280,SUS304ステンレス鋼
+P005,PROD-005,チタン板 2mm,RAW_MATERIAL,kg,1200,航空宇宙用チタン板 板厚2mm
+P006,PROD-006,炭素繊維シート,SEMI_FINISHED,sqm,850,炭素繊維複合材シート
+P007,PROD-007,真鍮丸棒 10mm,RAW_MATERIAL,meter,45,真鍮丸棒 径10mm
+P008,PROD-008,PETフィルム 50um,SEMI_FINISHED,sqm,12,PETプラスチックフィルム 50ミクロン
+P009,PROD-009,シリコンウェーハ 200mm,SEMI_FINISHED,piece,350,半導体用シリコンウェーハ 200mm
+P010,PROD-010,エポキシ樹脂 A型,RAW_MATERIAL,liter,65,工業用エポキシ樹脂
+P011,PROD-011,セラミック基板,SEMI_FINISHED,piece,180,電子部品用セラミック基板
+P012,PROD-012,マグネシウム合金 AZ31,RAW_MATERIAL,kg,520,自動車用マグネシウム合金
+P013,PROD-013,光学ガラス BK7,SEMI_FINISHED,piece,95,光学ガラスブランク
+P014,PROD-014,黒鉛ブロック,RAW_MATERIAL,kg,380,高純度黒鉛ブロック
+P015,PROD-015,ポリウレタンフォーム,SEMI_FINISHED,kg,42,軟質ポリウレタンフォーム
+P016,PROD-016,鋼板 2mm,RAW_MATERIAL,kg,180,熱間圧延鋼板 板厚2mm
+P017,PROD-017,鋼板 3mm,RAW_MATERIAL,kg,210,冷間圧延鋼板 板厚3mm
+P018,PROD-018,鋼板 5mm,RAW_MATERIAL,kg,260,構造用鋼板 板厚5mm
+P019,PROD-019,アルミ合金 6061,RAW_MATERIAL,kg,480,アルミニウム合金6061-T6系
+P020,PROD-020,アルミ合金 7075,RAW_MATERIAL,kg,620,超々ジュラルミン7075高強度
+P021,PROD-021,アルミ板 1mm,RAW_MATERIAL,kg,390,アルミニウム板 板厚1mm
+P022,PROD-022,アルミ板 3mm,RAW_MATERIAL,kg,420,アルミニウム板 板厚3mm
+P023,PROD-023,銅線 1.0mm,RAW_MATERIAL,meter,18,銅線 線径1.0mm
+P024,PROD-024,銅線 5.0mm,RAW_MATERIAL,meter,38,銅線 線径5.0mm
+P025,PROD-025,銅板 0.5mm,RAW_MATERIAL,kg,680,無酸素銅板 板厚0.5mm
+P026,PROD-026,銅管 8mm,RAW_MATERIAL,meter,52,銅管 外径8mm
+P027,PROD-027,ステンレス鋼 316,RAW_MATERIAL,kg,340,SUS316Lステンレス鋼
+P028,PROD-028,ステンレス鋼 430,RAW_MATERIAL,kg,220,フェライト系SUS430ステンレス鋼
+P029,PROD-029,ステンレス線 1mm,RAW_MATERIAL,meter,15,ステンレス鋼線 線径1mm
+P030,PROD-030,チタン丸棒 10mm,RAW_MATERIAL,meter,1450,チタン丸棒 グレード5
+P031,PROD-031,チタン線 2mm,RAW_MATERIAL,meter,280,チタン線 線径2mm
+P032,PROD-032,ニッケル合金 インコネル,RAW_MATERIAL,kg,1800,インコネル625ニッケル合金
+P033,PROD-033,ニッケル板 1mm,RAW_MATERIAL,kg,1500,純ニッケル板 板厚1mm
+P034,PROD-034,亜鉛インゴット,RAW_MATERIAL,kg,120,高純度亜鉛インゴット 99.99%
+P035,PROD-035,錫インゴット,RAW_MATERIAL,kg,950,はんだ用錫インゴット
+P036,PROD-036,鉛フリーはんだ線,RAW_MATERIAL,meter,8,SAC305鉛フリーはんだ
+P037,PROD-037,タングステン棒 5mm,RAW_MATERIAL,meter,2200,純タングステン棒 径5mm
+P038,PROD-038,モリブデン板,RAW_MATERIAL,kg,1900,モリブデン板 板厚0.5mm
+P039,PROD-039,コバルト粉末,RAW_MATERIAL,kg,2800,焼結用コバルト粉末
+P040,PROD-040,鉄粉 アトマイズ,RAW_MATERIAL,kg,85,アトマイズ鉄粉 45um
+P041,PROD-041,りん青銅丸棒 15mm,RAW_MATERIAL,meter,55,りん青銅丸棒 径15mm
+P042,PROD-042,黄銅板 1mm,RAW_MATERIAL,kg,420,黄銅C2680板 板厚1mm
+P043,PROD-043,黄銅管 6mm,RAW_MATERIAL,meter,32,黄銅管 外径6mm
+P044,PROD-044,ばね鋼線,RAW_MATERIAL,meter,22,ばね鋼線 SWP-A
+P045,PROD-045,工具鋼 D2 ブロック,RAW_MATERIAL,kg,580,工具鋼SKD11/D2ブロック
+P046,PROD-046,エポキシ樹脂 B型,RAW_MATERIAL,liter,78,耐熱エポキシ樹脂
+P047,PROD-047,エポキシ硬化剤,RAW_MATERIAL,liter,55,アミン系エポキシ硬化剤
+P048,PROD-048,シリコーンゴム RTV,RAW_MATERIAL,kg,120,室温加硫シリコーンゴム
+P049,PROD-049,ポリエチレンペレット HD,RAW_MATERIAL,kg,35,HDPE射出成形用ペレット
+P050,PROD-050,ポリプロピレンペレット,RAW_MATERIAL,kg,32,PPホモポリマーペレット
+P051,PROD-051,ポリカーボネートペレット,RAW_MATERIAL,kg,95,PC透明グレードペレット
+P052,PROD-052,ナイロン66ペレット,RAW_MATERIAL,kg,88,PA66ガラス繊維30%強化
+P053,PROD-053,ABS樹脂ペレット,RAW_MATERIAL,kg,48,ABS汎用グレード
+P054,PROD-054,PEEKペレット,RAW_MATERIAL,kg,3500,PEEKナチュラルグレード
+P055,PROD-055,PTFE丸棒 20mm,RAW_MATERIAL,meter,65,PTFE丸棒 径20mm
+P056,PROD-056,POM丸棒 30mm,RAW_MATERIAL,meter,28,ジュラコン/POM丸棒 径30mm
+P057,PROD-057,アクリル板 3mm,RAW_MATERIAL,sqm,45,PMMA透明板 板厚3mm
+P058,PROD-058,天然ゴムシート,RAW_MATERIAL,kg,38,天然ゴムNRシート
+P059,PROD-059,ニトリルゴムシート,RAW_MATERIAL,kg,55,NBR耐油性シート
+P060,PROD-060,アルミナ粉末 99.5%,RAW_MATERIAL,kg,140,高純度アルミナ粉末
+P061,PROD-061,ジルコニア粉末,RAW_MATERIAL,kg,280,イットリア安定化ジルコニア
+P062,PROD-062,炭化ケイ素砥粒,RAW_MATERIAL,kg,95,SiC研磨砥粒 #120
+P063,PROD-063,窒化ホウ素粉末,RAW_MATERIAL,kg,450,六方晶BN粉末
+P064,PROD-064,石英砂,RAW_MATERIAL,kg,15,高純度珪砂
+P065,PROD-065,ガラス繊維ロービング,RAW_MATERIAL,kg,42,Eガラス繊維ロービング 2400tex
+P066,PROD-066,ケブラー繊維,RAW_MATERIAL,kg,780,複合材用アラミド繊維
+P067,PROD-067,カーボンブラック N330,RAW_MATERIAL,kg,35,カーボンブラック充填グレード
+P068,PROD-068,炭酸カルシウム,RAW_MATERIAL,kg,12,重質炭酸カルシウム充填材
+P069,PROD-069,タルク粉末,RAW_MATERIAL,kg,18,プラスチック用タルク充填材
+P070,PROD-070,炭素繊維パイプ 20mm,SEMI_FINISHED,meter,120,CFRPパイプ 外径20mm
+P071,PROD-071,炭素繊維板 2mm,SEMI_FINISHED,sqm,950,CFRP板 板厚2mm 織物
+P072,PROD-072,炭素繊維丸棒 8mm,SEMI_FINISHED,meter,65,引抜成形カーボンロッド 径8mm
+P073,PROD-073,ガラス繊維板 2mm,SEMI_FINISHED,sqm,35,FR-4ガラスエポキシ板
+P074,PROD-074,ガラス繊維パイプ 25mm,SEMI_FINISHED,meter,28,FRPパイプ 外径25mm
+P075,PROD-075,プリント基板 FR-4 1.6mm,SEMI_FINISHED,piece,8,生基板 100x100mm
+P076,PROD-076,フレキシブル基板,SEMI_FINISHED,piece,25,フレキシブルPCBブランク
+P077,PROD-077,シリコンウェーハ 300mm,SEMI_FINISHED,piece,580,シリコンウェーハ 300mm プライム
+P078,PROD-078,シリコンウェーハ 150mm,SEMI_FINISHED,piece,180,シリコンウェーハ 150mm テスト用
+P079,PROD-079,セラミックディスク 25mm,SEMI_FINISHED,piece,45,圧電セラミックディスク 25mm
+P080,PROD-080,セラミック丸棒 5mm,SEMI_FINISHED,meter,95,アルミナセラミック丸棒 径5mm
+P081,PROD-081,セラミック板 50x50,SEMI_FINISHED,piece,120,AlNセラミック板 50x50mm
+P082,PROD-082,サファイア窓 10mm,SEMI_FINISHED,piece,280,サファイア光学窓
+P083,PROD-083,光学レンズ BK7 25mm,SEMI_FINISHED,piece,150,平凸レンズ 25mm
+P084,PROD-084,光学フィルタ 550nm,SEMI_FINISHED,piece,220,バンドパスフィルタ 550nm
+P085,PROD-085,ゴムガスケットセット,SEMI_FINISHED,set,35,NBR Oリング各種セット
+P086,PROD-086,ゴムシールリング 50mm,SEMI_FINISHED,piece,8,NBRシールリング 内径50mm
+P087,PROD-087,PPフィルム 30um,SEMI_FINISHED,sqm,8,PPフィルム 30ミクロン
+P088,PROD-088,PEフィルム 100um,SEMI_FINISHED,sqm,15,LDPEフィルム 100ミクロン
+P089,PROD-089,超高分子量PEシート,SEMI_FINISHED,sqm,85,UHMWPE板 板厚10mm
+P090,PROD-090,EVAフォームシート 5mm,SEMI_FINISHED,sqm,12,EVA発泡シート 5mm
+P091,PROD-091,PUフォームシート 10mm,SEMI_FINISHED,sqm,18,PU発泡シート 10mm
+P092,PROD-092,断熱ボード,SEMI_FINISHED,sqm,45,断熱材ボード
+P093,PROD-093,熱収縮チューブ 10mm,SEMI_FINISHED,meter,5,熱収縮チューブ 2:1 10mm
+P094,PROD-094,シリコーンチューブ 6mm,SEMI_FINISHED,meter,12,医療用シリコーンチューブ
+P095,PROD-095,テフロンチューブ 4mm,SEMI_FINISHED,meter,18,PTFEチューブ 内径4mm
+P096,PROD-096,積層板 FR-5,SEMI_FINISHED,sqm,55,耐熱FR-5積層板
+P097,PROD-097,フェノール板 5mm,SEMI_FINISHED,sqm,28,フェノール樹脂板
+P098,PROD-098,モーターブラケット組立品,FINISHED,piece,250,CNC加工モーターブラケット
+P099,PROD-099,ギアボックス A型,FINISHED,piece,1200,遊星歯車減速機 減速比10:1
+P100,PROD-100,ギアボックス B型,FINISHED,piece,1500,遊星歯車減速機 減速比20:1
+P101,PROD-101,センサーハウジング IP67,FINISHED,piece,180,ダイカストセンサーハウジング
+P102,PROD-102,センサーハウジング IP68,FINISHED,piece,220,切削加工センサーハウジング
+P103,PROD-103,制御基板 PCB-A,FINISHED,piece,350,メイン制御基板 実装済み
+P104,PROD-104,制御基板 PCB-B,FINISHED,piece,480,IO拡張基板 実装済み
+P105,PROD-105,電源ユニット 24V,FINISHED,piece,150,スイッチング電源 24V 5A
+P106,PROD-106,電源ユニット 48V,FINISHED,piece,280,産業用電源 48V 10A
+P107,PROD-107,コネクタハーネス 12P,FINISHED,piece,35,12ピン防水ハーネス
+P108,PROD-108,コネクタハーネス 24P,FINISHED,piece,55,24ピン産業用ハーネス
+P109,PROD-109,ケーブルアセンブリ USB-C,FINISHED,piece,22,USB-Cケーブル組立品 1m
+P110,PROD-110,ケーブルアセンブリ Ethernet,FINISHED,piece,28,Cat6イーサネットケーブル 3m
+P111,PROD-111,リニアアクチュエータ 100mm,FINISHED,piece,450,直動アクチュエータ ストローク100mm
+P112,PROD-112,ロータリーアクチュエータ 90度,FINISHED,piece,380,空圧式回転アクチュエータ
+P113,PROD-113,電磁弁 12V,FINISHED,piece,95,2方向電磁弁 12V
+P114,PROD-114,比例弁,FINISHED,piece,850,比例流量制御弁
+P115,PROD-115,ダイヤフラムポンプ 小型,FINISHED,piece,120,小型ダイヤフラムポンプ
+P116,PROD-116,チューブポンプ,FINISHED,piece,350,ペリスタルティック定量ポンプ
+P117,PROD-117,軸流ファン 80mm,FINISHED,piece,25,軸流ファン 80x80x25mm 12V
+P118,PROD-118,ブロアファン 120mm,FINISHED,piece,55,遠心ブロア 120mm
+P119,PROD-119,カートリッジヒーター 200W,FINISHED,piece,35,カートリッジヒーター 200W
+P120,PROD-120,バンドヒーター 500W,FINISHED,piece,85,バンドヒーター 500W 内径50mm
+P121,PROD-121,熱電対 K型,FINISHED,piece,28,K型熱電対 100mm
+P122,PROD-122,熱電対 J型,FINISHED,piece,25,J型熱電対 150mm
+P123,PROD-123,温度センサー PT100,FINISHED,piece,42,RTD温度センサー PT100 クラスA
+P124,PROD-124,圧力センサー 10bar,FINISHED,piece,180,圧力トランスデューサ 0-10bar
+P125,PROD-125,近接センサー 誘導型,FINISHED,piece,65,誘導型近接センサー M12
+P126,PROD-126,光電センサー,FINISHED,piece,95,拡散反射型光電センサー
+P127,PROD-127,ロードセル 100kg,FINISHED,piece,250,ひずみゲージ式ロードセル 100kg
+P128,PROD-128,ロータリーエンコーダ 1000PPR,FINISHED,piece,180,インクリメンタルエンコーダ 1000PPR
+P129,PROD-129,表示モジュール TFT 3.5,FINISHED,piece,45,TFT液晶モジュール 3.5インチ
+P130,PROD-130,表示モジュール OLED 1.3,FINISHED,piece,28,OLEDディスプレイ 1.3インチ I2C
+P131,PROD-131,メンブレンキーパッド 4x4,FINISHED,piece,12,メンブレンキーパッド 4x4マトリクス
+P132,PROD-132,トグルスイッチ DPDT,FINISHED,piece,8,トグルスイッチ DPDT 6A
+P133,PROD-133,リレーモジュール 4ch,FINISHED,piece,18,4チャネルリレーモジュール 5V
+P134,PROD-134,端子台 10P,FINISHED,piece,15,DINレール端子台 10極
+P135,PROD-135,DINレール 35mm 1m,FINISHED,piece,12,標準DINレール 35mm
+P136,PROD-136,ABS樹脂筐体 IP65,FINISHED,piece,45,ABS筐体 200x150x100
+P137,PROD-137,アルミ筐体,FINISHED,piece,120,アルミ押出し筐体
+P138,PROD-138,ヒートシンク 50x50,FINISHED,piece,15,アルミヒートシンク 50x50x20
+P139,PROD-139,ヒートシンク 100x100,FINISHED,piece,35,フィン付きヒートシンク 100x100x40
+P140,PROD-140,リニアベアリング LM12,FINISHED,piece,18,リニアベアリング LM12UU
+P141,PROD-141,ボールベアリング 6201,FINISHED,piece,8,深溝玉軸受 6201
+P142,PROD-142,精密シャフト 12mm,FINISHED,meter,45,研削シャフト 12mm h6
+P143,PROD-143,ボールねじ 12mm,FINISHED,meter,85,ボールねじ 12mm ピッチ4mm
+P144,PROD-144,タイミングベルト GT2 6mm,FINISHED,meter,8,GT2タイミングベルト 幅6mm
+P145,PROD-145,タイミングプーリ GT2 20T,FINISHED,piece,12,GT2プーリ 20歯 穴径5mm
+P146,PROD-146,フレキシブルカップリング 6.35mm,FINISHED,piece,18,フレキシブルカップリング 6.35-8mm
+P147,PROD-147,圧縮ばね 20mm,FINISHED,piece,5,圧縮ばね 外径10mm
+P148,PROD-148,ねじセット M3,FINISHED,set,15,M3ねじ/ナット/ワッシャーセット 100個
+P149,PROD-149,ねじセット M5,FINISHED,set,18,M5六角ボルトセット 50個
+P150,PROD-150,スペーサーセット M3,FINISHED,set,12,ナイロンスペーサーセット M3各種
+P151,PROD-151,ステッピングモーター NEMA17,FINISHED,piece,45,ステッピングモーター 1.8度 0.4Nm
+P152,PROD-152,サーボモーター 400W,FINISHED,piece,350,ACサーボモーター 400W エンコーダ付
+P153,PROD-153,DCモーター 12V 100RPM,FINISHED,piece,28,ギヤードDCモーター 12V
+P154,PROD-154,超硬チップ,CONSUMABLE,piece,35,超硬インサート TNMG160408
+P155,PROD-155,HSS ドリル 6mm,CONSUMABLE,piece,8,HSSツイストドリル 6mm
+P156,PROD-156,エンドミル 4枚刃 8mm,CONSUMABLE,piece,45,超硬ソリッドエンドミル 8mm
+P157,PROD-157,研削ディスク 125mm,CONSUMABLE,piece,5,研削ディスク 125mm P80
+P158,PROD-158,研磨コンパウンド,CONSUMABLE,kg,28,ダイヤモンド研磨剤 3um
+P159,PROD-159,MIG溶接ワイヤ 1mm,CONSUMABLE,kg,35,MIG溶接ワイヤ ER70S-6
+P160,PROD-160,溶接棒 E6013,CONSUMABLE,kg,25,被覆アーク溶接棒 E6013 3.2mm
+P161,PROD-161,フラックスペースト,CONSUMABLE,kg,42,はんだ付けフラックスペースト RMA
+P162,PROD-162,作動油 ISO32,CONSUMABLE,liter,18,油圧作動油 ISO VG 32
+P163,PROD-163,切削液 濃縮タイプ,CONSUMABLE,liter,22,水溶性切削液
+P164,PROD-164,瞬間接着剤,CONSUMABLE,piece,8,工業用瞬間接着剤 20g
+P165,PROD-165,構造用接着剤,CONSUMABLE,piece,35,二液型構造用接着剤
+P166,PROD-166,カプトンテープ 25mm,CONSUMABLE,roll,15,ポリイミドテープ 25mm x 33m
+P167,PROD-167,両面テープ,CONSUMABLE,roll,8,VHB両面テープ 12mm
+P168,PROD-168,耐水ペーパー P400,CONSUMABLE,piece,2,耐水研磨紙 P400
+P169,PROD-169,フィルターエレメント 10um,CONSUMABLE,piece,25,焼結金属フィルター 10um
+P170,PROD-170,乾燥剤 シリカゲル,CONSUMABLE,kg,12,インジケータ付きシリカゲル
+P171,PROD-171,洗浄溶剤 IPA,CONSUMABLE,liter,15,イソプロピルアルコール 99.5%
+P172,PROD-172,リントフリーワイパー,CONSUMABLE,pack,18,クリーンルーム用ワイパー 100枚入
+P173,PROD-173,ニトリル手袋 M,CONSUMABLE,box,12,ニトリル手袋 Mサイズ 100枚入
+P174,PROD-174,ブラシレスモーター 2212,CONSUMABLE,piece,35,BLDCモーター 2212 1000KV
+P175,PROD-175,リニアガイド MGN12,CONSUMABLE,piece,22,ミニチュアリニアガイド 300mm
+P176,PROD-176,リニアガイド HGH20,CONSUMABLE,piece,85,リニアガイドブロック HGH20CA
+P177,PROD-177,空圧シリンダー 50mm,CONSUMABLE,piece,55,複動シリンダー ボア20mm
+P178,PROD-178,空圧継手 6mm,CONSUMABLE,piece,3,ワンタッチ継手 6mm 1/8 BSP
+P179,PROD-179,エアチューブ PU 6mm,CONSUMABLE,meter,2,PU空圧チューブ 6mm
+P180,PROD-180,Oリング フッ素ゴム 20mm,CONSUMABLE,piece,3,FKM Oリング 内径20mm 線径2mm
+P181,PROD-181,放熱グリス 5g,CONSUMABLE,piece,8,サーマルコンパウンド 5gシリンジ
+P182,PROD-182,フラックス入りはんだ 1mm,CONSUMABLE,meter,1,Sn63Pb37フラックス入りはんだ
+P183,PROD-183,ケーブルタイ 200mm,CONSUMABLE,pack,5,ナイロン結束バンド 200mm 100本入
+P184,PROD-184,熱収縮ラップ 100mm,CONSUMABLE,meter,3,PVC熱収縮チューブ 100mm
+P185,PROD-185,サーマルラベル 50x30,CONSUMABLE,roll,8,感熱ラベル 50x30mm 1000枚巻
+P186,PROD-186,静電防止袋 150x200,CONSUMABLE,pack,12,帯電防止袋 150x200mm 100枚入
+P187,PROD-187,エアキャップ 500mm,CONSUMABLE,meter,3,気泡緩衝材 幅500mm
+P188,PROD-188,段ボール箱 300mm,CONSUMABLE,piece,5,段ボール箱 300x200x150
+P189,PROD-189,木製パレット 1200,CONSUMABLE,piece,25,木製パレット 1200x800mm
+P190,PROD-190,真空グリス,CONSUMABLE,piece,35,シリコーン真空グリス 100g
+P191,PROD-191,ねじロック剤 青,CONSUMABLE,piece,12,中強度ねじロック剤
+P192,PROD-192,焼付き防止剤,CONSUMABLE,piece,18,銅系焼付き防止剤 100g
+P193,PROD-193,防錆油,CONSUMABLE,liter,15,水置換型防錆油
+P194,PROD-194,脱脂スプレー,CONSUMABLE,piece,8,工業用脱脂剤 500ml
+P195,PROD-195,マーキングペン 白,CONSUMABLE,piece,5,工業用マーカー 白
+P196,PROD-196,保護メガネ クリア,CONSUMABLE,piece,8,耐衝撃保護メガネ
+P197,PROD-197,耳栓 フォーム,CONSUMABLE,pack,5,使い捨てフォーム耳栓 50組入
+P198,PROD-198,防じんマスク FFP2,CONSUMABLE,box,18,FFP2防じんマスク 20枚入
+P199,PROD-199,救急箱 基本セット,CONSUMABLE,set,45,職場用救急箱
+P200,PROD-200,静電気防止リストストラップ,CONSUMABLE,piece,15,調整可能ESDリストストラップ

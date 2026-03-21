@@ -1,0 +1,16 @@
+# clouderby Client App Configuration for CloudHub 2
+# Connects to clouderby-server via internal Private Space URL
+
+http:
+  port: "8082"
+
+# Remote clouderbyd connection (via internal Private Space service URL)
+# CloudHub 2.0 internal URL format: <app-name>-<suffix>.internal-<space>.<region>.cloudhub.io
+clouderby:
+  host: "clouderby-mule-server-2m6ahj.internal-pnwfdv.jpn-e1.cloudhub.io"
+  port: "443"
+  database: "app"
+  secure: "true"
+  debug: "false"
+  user: "mule"
+  password: "mule123"

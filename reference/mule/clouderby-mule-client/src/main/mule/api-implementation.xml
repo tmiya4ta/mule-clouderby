@@ -1,0 +1,854 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+      xmlns:http="http://www.mulesoft.org/schema/mule/http"
+      xmlns:db="http://www.mulesoft.org/schema/mule/db"
+      xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+      xsi:schemaLocation="
+        http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+        http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+        http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+        http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+
+    <!-- Health Check -->
+    <flow name="health-check-flow">
+        <http:listener doc:name="GET /health" config-ref="HTTP_Listener_config" path="/health"/>
+        <ee:transform doc:name="Health Response">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    status: "UP",
+    service: "clouderby-client-app",
+    mode: "remote (clouderby-jdbc)",
+    targetServer: p('clouderby.host') ++ ":" ++ p('clouderby.port'),
+    secure: p('clouderby.secure'),
+    timestamp: now()
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+
+    <!-- GET /api/test - Quick connection test -->
+    <flow name="test-connection-flow">
+        <http:listener doc:name="GET /api/test" config-ref="HTTP_Listener_config" path="/api/test" allowedMethods="GET"/>
+        <logger level="INFO" message="[CLIENT] Testing connection to remote clouderby server"/>
+        <db:select doc:name="Test query" config-ref="Database_Config">
+            <db:sql>SELECT COUNT(*) AS test FROM SYS.SYSSCHEMAS WHERE SCHEMANAME = 'APP'</db:sql>
+        </db:select>
+        <ee:transform doc:name="Test Response">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    success: true,
+    message: "Connection successful via clouderby-jdbc",
+    targetServer: p('clouderby.host') ++ ":" ++ p('clouderby.port'),
+    secure: p('clouderby.secure')
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler ref="global-error-handler"/>
+    </flow>
+
+    <!-- GET /api/tables - List tables via clouderby-jdbc -->
+    <flow name="tables-flow">
+        <http:listener doc:name="GET /api/tables" config-ref="HTTP_Listener_config" path="/api/tables" allowedMethods="GET"/>
+        <logger level="INFO" message="[CLIENT] Fetching tables from remote clouderby server"/>
+        <db:select doc:name="Query tables" config-ref="Database_Config">
+            <db:sql>SELECT T.TABLENAME AS name FROM SYS.SYSTABLES T JOIN SYS.SYSSCHEMAS S ON T.SCHEMAID = S.SCHEMAID WHERE S.SCHEMANAME = 'APP' AND T.TABLETYPE = 'T' ORDER BY T.TABLENAME</db:sql>
+        </db:select>
+        <ee:transform doc:name="Transform">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    source: "clouderby-client-app (via clouderby-jdbc)",
+    tables: payload map $.NAME,
+    count: sizeOf(payload)
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler ref="global-error-handler"/>
+    </flow>
+
+    <!-- GET /api/customers - List customers from MDM_CUSTOMERS -->
+    <flow name="customers-get-flow">
+        <http:listener doc:name="GET /api/customers" config-ref="HTTP_Listener_config" path="/api/customers" allowedMethods="GET"/>
+        <logger level="INFO" message="[CLIENT] Fetching customers from remote clouderby server"/>
+        <db:select doc:name="Select customers" config-ref="Database_Config">
+            <db:sql>SELECT CUSTOMER_ID, CUSTOMER_CODE, CUSTOMER_NAME, CUSTOMER_TYPE, EMAIL, PHONE FROM MDM_CUSTOMERS ORDER BY CUSTOMER_CODE FETCH FIRST 100 ROWS ONLY</db:sql>
+        </db:select>
+        <ee:transform doc:name="Transform">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    source: "clouderby-client-app (via clouderby-jdbc)",
+    customers: payload,
+    count: sizeOf(payload)
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler ref="global-error-handler"/>
+    </flow>
+
+    <!-- GET /api/products - List products from MDM_PRODUCTS -->
+    <flow name="products-get-flow">
+        <http:listener doc:name="GET /api/products" config-ref="HTTP_Listener_config" path="/api/products" allowedMethods="GET"/>
+        <logger level="INFO" message="[CLIENT] Fetching products from remote clouderby server"/>
+        <db:select doc:name="Select products" config-ref="Database_Config">
+            <db:sql>SELECT PRODUCT_ID, PRODUCT_CODE, PRODUCT_NAME, PRODUCT_TYPE, UNIT, UNIT_PRICE FROM MDM_PRODUCTS ORDER BY PRODUCT_CODE FETCH FIRST 100 ROWS ONLY</db:sql>
+        </db:select>
+        <ee:transform doc:name="Transform">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    source: "clouderby-client-app (via clouderby-jdbc)",
+    products: payload,
+    count: sizeOf(payload)
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler ref="global-error-handler"/>
+    </flow>
+
+    <!-- GET /api/orders - List sales orders from SAL_SALES_ORDERS -->
+    <flow name="orders-get-flow">
+        <http:listener doc:name="GET /api/orders" config-ref="HTTP_Listener_config" path="/api/orders" allowedMethods="GET"/>
+        <logger level="INFO" message="[CLIENT] Fetching orders from remote clouderby server"/>
+        <db:select doc:name="Select orders" config-ref="Database_Config">
+            <db:sql>SELECT ID, ORDER_NUMBER, CUSTOMER_ID, STATUS, ORDER_DATE, TOTAL, CURRENCY FROM SAL_SALES_ORDERS ORDER BY ID DESC FETCH FIRST 100 ROWS ONLY</db:sql>
+        </db:select>
+        <ee:transform doc:name="Transform">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    source: "clouderby-client-app (via clouderby-jdbc)",
+    orders: payload,
+    count: sizeOf(payload)
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler ref="global-error-handler"/>
+    </flow>
+
+    <!-- GET /api/inventory - List inventory from INV_INVENTORY -->
+    <flow name="inventory-get-flow">
+        <http:listener doc:name="GET /api/inventory" config-ref="HTTP_Listener_config" path="/api/inventory" allowedMethods="GET"/>
+        <logger level="INFO" message="[CLIENT] Fetching inventory from remote clouderby server"/>
+        <db:select doc:name="Select inventory" config-ref="Database_Config">
+            <db:sql>SELECT INVENTORY_ID, PRODUCT_ID, WAREHOUSE_ID, QUANTITY, UNIT, STATUS FROM INV_INVENTORY ORDER BY INVENTORY_ID FETCH FIRST 100 ROWS ONLY</db:sql>
+        </db:select>
+        <ee:transform doc:name="Transform">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    source: "clouderby-client-app (via clouderby-jdbc)",
+    inventory: payload,
+    count: sizeOf(payload)
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler ref="global-error-handler"/>
+    </flow>
+
+    <!-- POST /api/transaction-test - Test transaction with try scope -->
+    <flow name="transaction-test-flow">
+        <http:listener doc:name="POST /api/transaction-test" config-ref="HTTP_Listener_config" path="/api/transaction-test" allowedMethods="POST"/>
+        <logger level="INFO" message="[CLIENT] Testing transaction with try scope, fail=#[attributes.queryParams.fail default 'false']"/>
+
+        <!-- Save query param before it's lost -->
+        <set-variable variableName="shouldFail" value="#[attributes.queryParams.fail default 'false']"/>
+
+        <!-- Setup: Create test table -->
+        <try doc:name="Create table if not exists">
+            <db:execute-ddl doc:name="Create test table" config-ref="Database_Config">
+                <db:sql>CREATE TABLE tx_test_mule (id INTEGER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, name VARCHAR(200), value INTEGER)</db:sql>
+            </db:execute-ddl>
+            <error-handler>
+                <on-error-continue type="ANY">
+                    <logger level="DEBUG" message="[TX-TEST] Table tx_test_mule already exists"/>
+                </on-error-continue>
+            </error-handler>
+        </try>
+
+        <!-- Clear any previous test data -->
+        <db:delete doc:name="Clear test data" config-ref="Database_Config">
+            <db:sql>DELETE FROM tx_test_mule</db:sql>
+        </db:delete>
+
+        <!-- Test: Transaction with rollback on error -->
+        <try doc:name="Try Scope with Transaction" transactionalAction="BEGIN_OR_JOIN">
+            <!-- Insert first record -->
+            <db:insert doc:name="Insert record 1" config-ref="Database_Config">
+                <db:sql>INSERT INTO tx_test_mule (name, value) VALUES ('Record1', 100)</db:sql>
+            </db:insert>
+            <logger level="INFO" message="[TX-TEST] Inserted Record1"/>
+
+            <!-- Insert second record -->
+            <db:insert doc:name="Insert record 2" config-ref="Database_Config">
+                <db:sql>INSERT INTO tx_test_mule (name, value) VALUES ('Record2', 200)</db:sql>
+            </db:insert>
+            <logger level="INFO" message="[TX-TEST] Inserted Record2"/>
+
+            <!-- Simulate error if requested -->
+            <choice doc:name="Check if should fail">
+                <when expression="#[vars.shouldFail == 'true']">
+                    <logger level="INFO" message="[TX-TEST] Raising simulated error for rollback test"/>
+                    <raise-error doc:name="Simulate Error" type="APP:SIMULATED_ERROR" description="Simulated error to test rollback"/>
+                </when>
+            </choice>
+
+            <error-handler>
+                <on-error-propagate type="ANY">
+                    <logger level="WARN" message="[TX-TEST] Error occurred, transaction will be rolled back: #[error.description]"/>
+                </on-error-propagate>
+            </error-handler>
+        </try>
+
+        <!-- Count records after transaction -->
+        <db:select doc:name="Count records" config-ref="Database_Config">
+            <db:sql>SELECT COUNT(*) as cnt FROM tx_test_mule</db:sql>
+        </db:select>
+
+        <ee:transform doc:name="Build Response">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    success: true,
+    transactionCommitted: true,
+    recordCount: payload[0].cnt,
+    message: "Transaction committed successfully. Records: " ++ (payload[0].cnt as String)
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+
+        <error-handler>
+            <on-error-continue type="APP:SIMULATED_ERROR">
+                <!-- Count records after rollback -->
+                <db:select doc:name="Count records after rollback" config-ref="Database_Config">
+                    <db:sql>SELECT COUNT(*) as cnt FROM tx_test_mule</db:sql>
+                </db:select>
+                <ee:transform doc:name="Build Rollback Response">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    success: true,
+    transactionCommitted: false,
+    transactionRolledBack: true,
+    recordCount: payload[0].cnt,
+    message: "Transaction rolled back due to simulated error. Records: " ++ (payload[0].cnt as String) ++ " (should be 0)"
+}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </on-error-continue>
+        </error-handler>
+    </flow>
+
+    <!-- GET /api/customer/{id} - Get customer by ID with input-parameters -->
+    <flow name="customer-by-id-flow">
+        <http:listener doc:name="GET /api/customer/{id}" config-ref="HTTP_Listener_config" path="/api/customer/{id}" allowedMethods="GET"/>
+        <logger level="INFO" message="[CLIENT] Fetching customer by ID: #[attributes.uriParams.id]"/>
+        <db:select doc:name="Select customer by ID" config-ref="Database_Config">
+            <db:sql>SELECT CUSTOMER_ID, CUSTOMER_CODE, CUSTOMER_NAME, CUSTOMER_TYPE, EMAIL, PHONE FROM MDM_CUSTOMERS WHERE CUSTOMER_ID = :customerId</db:sql>
+            <db:input-parameters><![CDATA[#[{
+                customerId: attributes.uriParams.id
+            }]]]></db:input-parameters>
+        </db:select>
+        <ee:transform doc:name="Transform">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    source: "clouderby-client-app (via clouderby-jdbc)",
+    customer: payload[0] default null,
+    found: !isEmpty(payload)
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler ref="global-error-handler"/>
+    </flow>
+
+    <!-- GET /api/product-search?code=xxx - Search product with input-parameters -->
+    <flow name="product-search-flow">
+        <http:listener doc:name="GET /api/product-search" config-ref="HTTP_Listener_config" path="/api/product-search" allowedMethods="GET"/>
+        <logger level="INFO" message="[CLIENT] Searching product by code: #[attributes.queryParams.code]"/>
+        <db:select doc:name="Search product" config-ref="Database_Config">
+            <db:sql>SELECT PRODUCT_ID, PRODUCT_CODE, PRODUCT_NAME, PRODUCT_TYPE, UNIT, UNIT_PRICE FROM MDM_PRODUCTS WHERE PRODUCT_CODE LIKE :code</db:sql>
+            <db:input-parameters><![CDATA[#[{
+                code: (attributes.queryParams.code default '') ++ '%'
+            }]]]></db:input-parameters>
+        </db:select>
+        <ee:transform doc:name="Transform">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    source: "clouderby-client-app (via clouderby-jdbc)",
+    searchCode: attributes.queryParams.code default '',
+    products: payload,
+    count: sizeOf(payload)
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler ref="global-error-handler"/>
+    </flow>
+
+    <!-- GET /api/inventory-search - Query with COALESCE and FETCH FIRST/OFFSET -->
+    <flow name="inventory-search-flow">
+        <http:listener doc:name="GET /api/inventory-search" config-ref="HTTP_Listener_config" path="/api/inventory-search" allowedMethods="GET"/>
+        <logger level="INFO" message="[CLIENT] Searching inventory with productId=#[attributes.queryParams.productId], limit=#[attributes.queryParams.limit]"/>
+        <db:select doc:name="Search inventory" config-ref="Database_Config">
+            <db:sql>SELECT INVENTORY_ID, PRODUCT_ID, WAREHOUSE_ID, QUANTITY, UNIT, STATUS FROM INV_INVENTORY WHERE PRODUCT_ID = COALESCE(:productId, PRODUCT_ID) ORDER BY INVENTORY_ID DESC FETCH FIRST 20 ROWS ONLY</db:sql>
+            <db:input-parameters><![CDATA[#[{
+                productId: if (isEmpty(attributes.queryParams.productId)) null else attributes.queryParams.productId
+            }]]]></db:input-parameters>
+        </db:select>
+        <ee:transform doc:name="Transform">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    source: "clouderby-client-app (via clouderby-jdbc)",
+    params: {
+        productId: attributes.queryParams.productId,
+        warehouseId: attributes.queryParams.warehouseId,
+        status: attributes.queryParams.status,
+        offset: attributes.queryParams.offset default 0,
+        limit: attributes.queryParams.limit default 20
+    },
+    inventory: payload,
+    count: sizeOf(payload)
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler ref="global-error-handler"/>
+    </flow>
+
+    <!-- ============================================================ -->
+    <!-- DB Connector Processor Tests                                  -->
+    <!-- ============================================================ -->
+
+    <!-- #1 POST /api/db-test/setup - Create test tables + seed data -->
+    <flow name="db-test-setup-flow">
+        <http:listener doc:name="POST /api/db-test/setup" config-ref="HTTP_Listener_config" path="/api/db-test/setup" allowedMethods="POST"/>
+        <logger level="INFO" message="[DB-TEST] Setting up test tables"/>
+
+        <try doc:name="Create db_test">
+            <db:execute-ddl doc:name="Create db_test table" config-ref="Database_Config">
+                <db:sql>CREATE TABLE db_test (id INTEGER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, name VARCHAR(200), value INTEGER, category VARCHAR(50), updated_at VARCHAR(50))</db:sql>
+            </db:execute-ddl>
+            <error-handler>
+                <on-error-continue type="ANY">
+                    <logger level="DEBUG" message="[DB-TEST] Table db_test already exists"/>
+                </on-error-continue>
+            </error-handler>
+        </try>
+
+        <try doc:name="Create db_script_test">
+            <db:execute-ddl doc:name="Create db_script_test table" config-ref="Database_Config">
+                <db:sql>CREATE TABLE db_script_test (id INTEGER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, label VARCHAR(200), score INTEGER)</db:sql>
+            </db:execute-ddl>
+            <error-handler>
+                <on-error-continue type="ANY">
+                    <logger level="DEBUG" message="[DB-TEST] Table db_script_test already exists"/>
+                </on-error-continue>
+            </error-handler>
+        </try>
+
+        <try doc:name="Create db_poll_events">
+            <db:execute-ddl doc:name="Create db_poll_events table" config-ref="Database_Config">
+                <db:sql>CREATE TABLE db_poll_events (id INTEGER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, event_name VARCHAR(200), created_at VARCHAR(50))</db:sql>
+            </db:execute-ddl>
+            <error-handler>
+                <on-error-continue type="ANY">
+                    <logger level="DEBUG" message="[DB-TEST] Table db_poll_events already exists"/>
+                </on-error-continue>
+            </error-handler>
+        </try>
+
+        <try doc:name="Create db_poll_picked">
+            <db:execute-ddl doc:name="Create db_poll_picked table" config-ref="Database_Config">
+                <db:sql>CREATE TABLE db_poll_picked (id INTEGER GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY, original_id INTEGER, event_name VARCHAR(200), picked_at VARCHAR(50))</db:sql>
+            </db:execute-ddl>
+            <error-handler>
+                <on-error-continue type="ANY">
+                    <logger level="DEBUG" message="[DB-TEST] Table db_poll_picked already exists"/>
+                </on-error-continue>
+            </error-handler>
+        </try>
+
+        <db:delete doc:name="Clear db_poll_picked" config-ref="Database_Config">
+            <db:sql>DELETE FROM db_poll_picked</db:sql>
+        </db:delete>
+
+        <db:delete doc:name="Clear db_test" config-ref="Database_Config">
+            <db:sql>DELETE FROM db_test</db:sql>
+        </db:delete>
+        <db:delete doc:name="Clear db_script_test" config-ref="Database_Config">
+            <db:sql>DELETE FROM db_script_test</db:sql>
+        </db:delete>
+        <db:delete doc:name="Clear db_poll_events" config-ref="Database_Config">
+            <db:sql>DELETE FROM db_poll_events</db:sql>
+        </db:delete>
+
+        <db:insert doc:name="Seed db_test row 1" config-ref="Database_Config">
+            <db:sql>INSERT INTO db_test (name, value, category, updated_at) VALUES (:name, :value, :category, :updatedAt)</db:sql>
+            <db:input-parameters><![CDATA[#[{
+                name: "Alice",
+                value: 100,
+                category: "A",
+                updatedAt: now() as String {format: "yyyy-MM-dd HH:mm:ss"}
+            }]]]></db:input-parameters>
+        </db:insert>
+        <db:insert doc:name="Seed db_test row 2" config-ref="Database_Config">
+            <db:sql>INSERT INTO db_test (name, value, category, updated_at) VALUES (:name, :value, :category, :updatedAt)</db:sql>
+            <db:input-parameters><![CDATA[#[{
+                name: "Bob",
+                value: 200,
+                category: "B",
+                updatedAt: now() as String {format: "yyyy-MM-dd HH:mm:ss"}
+            }]]]></db:input-parameters>
+        </db:insert>
+        <db:insert doc:name="Seed db_test row 3" config-ref="Database_Config">
+            <db:sql>INSERT INTO db_test (name, value, category, updated_at) VALUES (:name, :value, :category, :updatedAt)</db:sql>
+            <db:input-parameters><![CDATA[#[{
+                name: "Charlie",
+                value: 300,
+                category: "A",
+                updatedAt: now() as String {format: "yyyy-MM-dd HH:mm:ss"}
+            }]]]></db:input-parameters>
+        </db:insert>
+
+        <db:select doc:name="Verify db_test" config-ref="Database_Config">
+            <db:sql>SELECT * FROM db_test ORDER BY id</db:sql>
+        </db:select>
+
+        <ee:transform doc:name="Setup Response">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    success: true,
+    message: "Test tables created and seeded",
+    tables: ["db_test", "db_script_test", "db_poll_events"],
+    seedData: payload,
+    seedCount: sizeOf(payload)
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler ref="global-error-handler"/>
+    </flow>
+
+    <!-- #2 POST /api/db-test/update - Test db:update with input-parameters -->
+    <flow name="db-test-update-flow">
+        <http:listener doc:name="POST /api/db-test/update" config-ref="HTTP_Listener_config" path="/api/db-test/update" allowedMethods="POST"/>
+        <logger level="INFO" message="[DB-TEST] Testing db:update"/>
+
+        <ee:transform doc:name="Parse Input">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+
+        <db:update doc:name="Update by name" config-ref="Database_Config">
+            <db:sql>UPDATE db_test SET value = :value, updated_at = :updatedAt WHERE name = :name</db:sql>
+            <db:input-parameters><![CDATA[#[{
+                name: payload.name,
+                value: payload.value,
+                updatedAt: now() as String {format: "yyyy-MM-dd HH:mm:ss"}
+            }]]]></db:input-parameters>
+        </db:update>
+
+        <set-variable variableName="affectedRows" value="#[payload.affectedRows]"/>
+
+        <db:select doc:name="Verify update" config-ref="Database_Config">
+            <db:sql>SELECT * FROM db_test ORDER BY id</db:sql>
+        </db:select>
+
+        <ee:transform doc:name="Update Response">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    success: true,
+    processor: "db:update",
+    affectedRows: vars.affectedRows,
+    currentData: payload
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler ref="global-error-handler"/>
+    </flow>
+
+    <!-- #3 POST /api/db-test/bulk-insert - Test db:bulk-insert -->
+    <flow name="db-test-bulk-insert-flow">
+        <http:listener doc:name="POST /api/db-test/bulk-insert" config-ref="HTTP_Listener_config" path="/api/db-test/bulk-insert" allowedMethods="POST"/>
+        <logger level="INFO" message="[DB-TEST] Testing db:bulk-insert"/>
+
+        <ee:transform doc:name="Prepare bulk data">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+[
+    { name: "Delta", value: 400, category: "C", updatedAt: now() as String {format: "yyyy-MM-dd HH:mm:ss"} },
+    { name: "Echo",  value: 500, category: "C", updatedAt: now() as String {format: "yyyy-MM-dd HH:mm:ss"} },
+    { name: "Foxtrot", value: 600, category: "D", updatedAt: now() as String {format: "yyyy-MM-dd HH:mm:ss"} }
+]]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+
+        <db:bulk-insert doc:name="Bulk insert 3 rows" config-ref="Database_Config">
+            <db:bulk-input-parameters><![CDATA[#[payload]]]></db:bulk-input-parameters>
+            <db:sql>INSERT INTO db_test (name, value, category, updated_at) VALUES (:name, :value, :category, :updatedAt)</db:sql>
+        </db:bulk-insert>
+
+        <set-variable variableName="bulkResult" value="#[payload]"/>
+
+        <db:select doc:name="Verify bulk insert" config-ref="Database_Config">
+            <db:sql>SELECT * FROM db_test ORDER BY id</db:sql>
+        </db:select>
+
+        <ee:transform doc:name="Bulk Insert Response">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    success: true,
+    processor: "db:bulk-insert",
+    bulkResult: vars.bulkResult,
+    currentData: payload,
+    totalRows: sizeOf(payload)
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler ref="global-error-handler"/>
+    </flow>
+
+    <!-- #4 POST /api/db-test/bulk-update - Test db:bulk-update -->
+    <flow name="db-test-bulk-update-flow">
+        <http:listener doc:name="POST /api/db-test/bulk-update" config-ref="HTTP_Listener_config" path="/api/db-test/bulk-update" allowedMethods="POST"/>
+        <logger level="INFO" message="[DB-TEST] Testing db:bulk-update"/>
+
+        <ee:transform doc:name="Prepare bulk update data">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+[
+    { name: "Alice",   category: "X", updatedAt: now() as String {format: "yyyy-MM-dd HH:mm:ss"} },
+    { name: "Bob",     category: "X", updatedAt: now() as String {format: "yyyy-MM-dd HH:mm:ss"} },
+    { name: "Charlie", category: "Y", updatedAt: now() as String {format: "yyyy-MM-dd HH:mm:ss"} }
+]]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+
+        <db:bulk-update doc:name="Bulk update categories" config-ref="Database_Config">
+            <db:bulk-input-parameters><![CDATA[#[payload]]]></db:bulk-input-parameters>
+            <db:sql>UPDATE db_test SET category = :category, updated_at = :updatedAt WHERE name = :name</db:sql>
+        </db:bulk-update>
+
+        <set-variable variableName="bulkResult" value="#[payload]"/>
+
+        <db:select doc:name="Verify bulk update" config-ref="Database_Config">
+            <db:sql>SELECT * FROM db_test ORDER BY id</db:sql>
+        </db:select>
+
+        <ee:transform doc:name="Bulk Update Response">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    success: true,
+    processor: "db:bulk-update",
+    bulkResult: vars.bulkResult,
+    currentData: payload,
+    totalRows: sizeOf(payload)
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler ref="global-error-handler"/>
+    </flow>
+
+    <!-- #5 POST /api/db-test/bulk-delete - Test db:bulk-delete -->
+    <flow name="db-test-bulk-delete-flow">
+        <http:listener doc:name="POST /api/db-test/bulk-delete" config-ref="HTTP_Listener_config" path="/api/db-test/bulk-delete" allowedMethods="POST"/>
+        <logger level="INFO" message="[DB-TEST] Testing db:bulk-delete"/>
+
+        <ee:transform doc:name="Prepare bulk delete data">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+[
+    { name: "Delta" },
+    { name: "Echo" },
+    { name: "Foxtrot" }
+]]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+
+        <db:bulk-delete doc:name="Bulk delete by name" config-ref="Database_Config">
+            <db:bulk-input-parameters><![CDATA[#[payload]]]></db:bulk-input-parameters>
+            <db:sql>DELETE FROM db_test WHERE name = :name</db:sql>
+        </db:bulk-delete>
+
+        <set-variable variableName="bulkResult" value="#[payload]"/>
+
+        <db:select doc:name="Verify bulk delete" config-ref="Database_Config">
+            <db:sql>SELECT * FROM db_test ORDER BY id</db:sql>
+        </db:select>
+
+        <ee:transform doc:name="Bulk Delete Response">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    success: true,
+    processor: "db:bulk-delete",
+    bulkResult: vars.bulkResult,
+    currentData: payload,
+    totalRows: sizeOf(payload)
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler ref="global-error-handler"/>
+    </flow>
+
+    <!-- #6 POST /api/db-test/execute-script - Test db:execute-script -->
+    <flow name="db-test-execute-script-flow">
+        <http:listener doc:name="POST /api/db-test/execute-script" config-ref="HTTP_Listener_config" path="/api/db-test/execute-script" allowedMethods="POST"/>
+        <logger level="INFO" message="[DB-TEST] Testing db:execute-script"/>
+
+        <db:delete doc:name="Clear db_script_test" config-ref="Database_Config">
+            <db:sql>DELETE FROM db_script_test</db:sql>
+        </db:delete>
+        <db:insert doc:name="Insert Alpha" config-ref="Database_Config">
+            <db:sql>INSERT INTO db_script_test (label, score) VALUES ('Alpha', 10)</db:sql>
+        </db:insert>
+        <db:insert doc:name="Insert Beta" config-ref="Database_Config">
+            <db:sql>INSERT INTO db_script_test (label, score) VALUES ('Beta', 20)</db:sql>
+        </db:insert>
+        <db:insert doc:name="Insert Gamma" config-ref="Database_Config">
+            <db:sql>INSERT INTO db_script_test (label, score) VALUES ('Gamma', 30)</db:sql>
+        </db:insert>
+
+        <set-variable variableName="scriptResult" value="#[{ affectedRows: 4 }]"/>
+
+        <db:select doc:name="Verify script execution" config-ref="Database_Config">
+            <db:sql>SELECT * FROM db_script_test ORDER BY id</db:sql>
+        </db:select>
+
+        <ee:transform doc:name="Execute Script Response">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    success: true,
+    processor: "db:execute-script",
+    scriptResult: vars.scriptResult,
+    currentData: payload,
+    totalRows: sizeOf(payload)
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler ref="global-error-handler"/>
+    </flow>
+
+    <!-- #7 GET /api/db-test/stored-procedure - Test db:stored-procedure (expected to fail) -->
+    <flow name="db-test-stored-procedure-flow">
+        <http:listener doc:name="GET /api/db-test/stored-procedure" config-ref="HTTP_Listener_config" path="/api/db-test/stored-procedure" allowedMethods="GET"/>
+        <logger level="INFO" message="[DB-TEST] Testing db:stored-procedure (expected to fail - CallableStatement not implemented)"/>
+
+        <try doc:name="Try stored procedure">
+            <db:stored-procedure doc:name="Call procedure" config-ref="Database_Config">
+                <db:sql>{ call test_proc(:param1) }</db:sql>
+                <db:input-parameters><![CDATA[#[{
+                    param1: "test"
+                }]]]></db:input-parameters>
+            </db:stored-procedure>
+
+            <ee:transform doc:name="Unexpected Success">
+                <ee:message>
+                    <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    success: true,
+    processor: "db:stored-procedure",
+    message: "Stored procedure executed (unexpected)",
+    result: payload
+}]]></ee:set-payload>
+                </ee:message>
+            </ee:transform>
+
+            <error-handler>
+                <on-error-continue type="ANY">
+                    <ee:transform doc:name="Expected Error Response">
+                        <ee:message>
+                            <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    success: true,
+    processor: "db:stored-procedure",
+    supported: false,
+    message: "Stored procedure not supported (expected - CallableStatement not implemented in clouderby)",
+    errorType: error.errorType.identifier,
+    errorMessage: error.description
+}]]></ee:set-payload>
+                        </ee:message>
+                    </ee:transform>
+                </on-error-continue>
+            </error-handler>
+        </try>
+    </flow>
+
+    <!-- #8 db:on-table-row polling source - Polls db_poll_events every 30 seconds -->
+    <flow name="db-test-on-table-row-flow">
+        <db:listener doc:name="On table row" config-ref="Database_Config" table="db_poll_events" watermarkColumn="id">
+            <scheduling-strategy>
+                <fixed-frequency frequency="30" timeUnit="SECONDS"/>
+            </scheduling-strategy>
+        </db:listener>
+        <logger level="INFO" message="[DB-TEST] on-table-row picked up event: id=#[payload.id], event_name=#[payload.event_name], created_at=#[payload.created_at]"/>
+        <db:insert doc:name="Record picked event" config-ref="Database_Config">
+            <db:sql>INSERT INTO db_poll_picked (original_id, event_name, picked_at) VALUES (:originalId, :eventName, :pickedAt)</db:sql>
+            <db:input-parameters><![CDATA[#[{
+                originalId: payload.id,
+                eventName: payload.event_name,
+                pickedAt: now() as String {format: "yyyy-MM-dd HH:mm:ss"}
+            }]]]></db:input-parameters>
+        </db:insert>
+    </flow>
+
+    <!-- #9 POST /api/db-test/poll-event - Insert event for on-table-row to pick up -->
+    <flow name="db-test-insert-poll-event-flow">
+        <http:listener doc:name="POST /api/db-test/poll-event" config-ref="HTTP_Listener_config" path="/api/db-test/poll-event" allowedMethods="POST"/>
+        <logger level="INFO" message="[DB-TEST] Inserting poll event"/>
+
+        <ee:transform doc:name="Parse Input">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+
+        <db:insert doc:name="Insert poll event" config-ref="Database_Config">
+            <db:sql>INSERT INTO db_poll_events (event_name, created_at) VALUES (:eventName, :createdAt)</db:sql>
+            <db:input-parameters><![CDATA[#[{
+                eventName: payload.eventName,
+                createdAt: now() as String {format: "yyyy-MM-dd HH:mm:ss"}
+            }]]]></db:input-parameters>
+        </db:insert>
+
+        <set-variable variableName="insertResult" value="#[payload]"/>
+
+        <db:select doc:name="Get all events" config-ref="Database_Config">
+            <db:sql>SELECT * FROM db_poll_events ORDER BY id</db:sql>
+        </db:select>
+
+        <ee:transform doc:name="Poll Event Response">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    success: true,
+    message: "Event inserted - on-table-row will pick it up within 30 seconds",
+    insertResult: vars.insertResult,
+    allEvents: payload,
+    eventCount: sizeOf(payload)
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler ref="global-error-handler"/>
+    </flow>
+
+    <!-- #10 GET /api/db-test/query-single - Test db:query-single -->
+    <flow name="db-test-query-single-flow">
+        <http:listener doc:name="GET /api/db-test/query-single" config-ref="HTTP_Listener_config" path="/api/db-test/query-single" allowedMethods="GET"/>
+        <logger level="INFO" message="[DB-TEST] Testing db:query-single"/>
+
+        <db:query-single doc:name="Query single row" config-ref="Database_Config">
+            <db:sql>SELECT id, name, value, category, updated_at FROM db_test ORDER BY id FETCH FIRST 1 ROW ONLY</db:sql>
+        </db:query-single>
+
+        <ee:transform doc:name="Query Single Response">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    success: true,
+    processor: "db:query-single",
+    message: "Returns a single Map (not a List)",
+    row: payload,
+    payloadType: typeOf(payload)
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler ref="global-error-handler"/>
+    </flow>
+
+    <!-- #11 GET /api/db-test/poll-picked - Check events picked by on-table-row -->
+    <flow name="db-test-poll-picked-flow">
+        <http:listener doc:name="GET /api/db-test/poll-picked" config-ref="HTTP_Listener_config" path="/api/db-test/poll-picked" allowedMethods="GET"/>
+        <logger level="INFO" message="[DB-TEST] Checking on-table-row picked events"/>
+
+        <db:select doc:name="Get picked events" config-ref="Database_Config">
+            <db:sql>SELECT * FROM db_poll_picked ORDER BY id</db:sql>
+        </db:select>
+
+        <ee:transform doc:name="Poll Picked Response">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    success: true,
+    processor: "db:on-table-row (listener)",
+    message: if (sizeOf(payload) > 0)
+                "on-table-row picked up " ++ (sizeOf(payload) as String) ++ " event(s)"
+             else
+                "No events picked yet - wait up to 30 seconds after inserting a poll-event",
+    pickedEvents: payload,
+    pickedCount: sizeOf(payload)
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler ref="global-error-handler"/>
+    </flow>
+
+</mule>

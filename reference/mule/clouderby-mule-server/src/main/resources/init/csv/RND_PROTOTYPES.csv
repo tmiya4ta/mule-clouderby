@@ -1,0 +1,4 @@
+PROJECT_ID,PROTOTYPE_CODE,PROTOTYPE_NAME,VERSION,STATUS,SPECIFICATIONS,NOTES
+1,PT-001-A,高強度アルミ合金 試作A,1.0,TESTING,"引張強度: 350MPa, 伸び: 12%",初期試作品 Al-Mg-Si系
+1,PT-001-B,高強度アルミ合金 試作B,1.0,DESIGN,目標引張強度: 400MPa,改良版 添加元素最適化
+2,PT-002-A,高速成形カーボンシート,1.0,TESTING,サイクルタイム: 8分,新成形プロセス適用サンプル

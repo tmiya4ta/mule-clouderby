@@ -1,0 +1,968 @@
+openapi: 3.0.3
+info:
+  title: clouderby Protocol API
+  description: |
+    JDBC over HTTP/HTTPS protocol for SQLite.
+    This API enables JDBC drivers to communicate with clouderby server over HTTP.
+  version: 1.0.0
+  contact:
+    name: clouderby
+
+servers:
+  - url: https://{host}:{port}
+    description: clouderby server
+    variables:
+      host:
+        default: localhost
+      port:
+        default: "8081"
+
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  /sessions:
+    post:
+      operationId: createSession
+      summary: Create a database session
+      description: Creates a new session and returns session ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SessionCreateRequest"
+      responses:
+        "200":
+          description: Session created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionCreateResponse"
+        "500":
+          description: Failed to create session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    delete:
+      operationId: deleteSession
+      summary: Close a database session
+      description: Closes the session and releases resources
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      responses:
+        "200":
+          description: Session closed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionCloseResponse"
+        "404":
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /queries:
+    post:
+      operationId: executeQuery
+      summary: Execute SQL statement
+      description: Executes a SQL statement and returns query results or update count
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QueryRequest"
+      responses:
+        "200":
+          description: SQL executed successfully
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/QueryResponse"
+                  - $ref: "#/components/schemas/UpdateResponse"
+        "500":
+          description: SQL execution failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /statements:
+    post:
+      operationId: createStatement
+      summary: Create a prepared statement
+      description: Creates a prepared statement for parameterized queries
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatementCreateRequest"
+      responses:
+        "200":
+          description: Statement created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatementCreateResponse"
+        "500":
+          description: Failed to create statement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /statements/{statementId}:
+    delete:
+      operationId: deleteStatement
+      summary: Close prepared statement
+      description: Closes a prepared statement and releases resources
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+        - $ref: "#/components/parameters/StatementId"
+      responses:
+        "200":
+          description: Statement closed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatementCloseResponse"
+        "404":
+          description: Statement not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /statements/{statementId}/execute:
+    post:
+      operationId: executeStatement
+      summary: Execute prepared statement
+      description: Executes a prepared statement with parameters
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+        - $ref: "#/components/parameters/StatementId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatementExecuteRequest"
+      responses:
+        "200":
+          description: Statement executed successfully
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/QueryResponse"
+                  - $ref: "#/components/schemas/UpdateResponse"
+        "404":
+          description: Statement not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Statement execution failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /statements/{statementId}/metadata:
+    get:
+      operationId: getStatementMetadata
+      summary: Get statement metadata
+      description: Returns result set metadata for a prepared statement (for DataSense)
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+        - $ref: "#/components/parameters/StatementId"
+      responses:
+        "200":
+          description: Metadata retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatementMetadataResponse"
+        "404":
+          description: Statement not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /statements/{statementId}/batch:
+    post:
+      operationId: executeStatementBatch
+      summary: Execute prepared statement batch
+      description: Executes a prepared statement with multiple parameter sets
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+        - $ref: "#/components/parameters/StatementId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatementBatchRequest"
+      responses:
+        "200":
+          description: Batch executed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatementBatchResponse"
+        "404":
+          description: Statement not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Batch execution failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /cursors/{cursorId}/fetch:
+    post:
+      operationId: fetchCursor
+      summary: Fetch next page from a server-side cursor
+      parameters:
+        - name: cursorId
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: "#/components/parameters/SessionId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fetch-size:
+                  type: integer
+                  default: 100
+      responses:
+        "200":
+          description: Next page of results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueryResponse"
+
+  /cursors/{cursorId}:
+    delete:
+      operationId: closeCursor
+      summary: Close a server-side cursor
+      parameters:
+        - name: cursorId
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: "#/components/parameters/SessionId"
+      responses:
+        "200":
+          description: Cursor closed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  closed:
+                    type: boolean
+
+  /metadata/info:
+    get:
+      operationId: getMetadataInfo
+      summary: Get database/server metadata info
+      description: Returns product name, version, and other database metadata
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      responses:
+        "200":
+          description: Metadata retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetadataInfoResponse"
+        "404":
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /metadata/tables:
+    get:
+      operationId: getMetadataTables
+      summary: Get table list
+      description: Returns list of tables in the database
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+        - name: catalog
+          in: query
+          description: Catalog name filter (optional)
+          schema:
+            type: string
+        - name: schema
+          in: query
+          description: Schema name filter (optional)
+          schema:
+            type: string
+        - name: tablePattern
+          in: query
+          description: Table name pattern (SQL LIKE pattern, optional)
+          schema:
+            type: string
+        - name: types
+          in: query
+          description: Table types filter (TABLE, VIEW, etc.)
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        "200":
+          description: Tables retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetadataTablesResponse"
+        "404":
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /metadata/columns:
+    get:
+      operationId: getMetadataColumns
+      summary: Get column information
+      description: Returns column metadata for specified table(s)
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+        - name: catalog
+          in: query
+          description: Catalog name filter (optional)
+          schema:
+            type: string
+        - name: schema
+          in: query
+          description: Schema name filter (optional)
+          schema:
+            type: string
+        - name: tablePattern
+          in: query
+          description: Table name pattern (SQL LIKE pattern)
+          required: true
+          schema:
+            type: string
+        - name: columnPattern
+          in: query
+          description: Column name pattern (SQL LIKE pattern, optional)
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Columns retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetadataColumnsResponse"
+        "404":
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /transactions/begin:
+    post:
+      operationId: beginTransaction
+      summary: Begin a transaction
+      description: Begins a new transaction. Auto-commit will be disabled.
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      responses:
+        "200":
+          description: Transaction started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionResponse"
+        "400":
+          description: Transaction already in progress
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /transactions/commit:
+    post:
+      operationId: commitTransaction
+      summary: Commit the current transaction
+      description: Commits all changes made since the transaction began.
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      responses:
+        "200":
+          description: Transaction committed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionResponse"
+        "400":
+          description: No transaction in progress
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Commit failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /transactions/rollback:
+    post:
+      operationId: rollbackTransaction
+      summary: Rollback the current transaction
+      description: Discards all changes made since the transaction began.
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      responses:
+        "200":
+          description: Transaction rolled back
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionResponse"
+        "400":
+          description: No transaction in progress
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Rollback failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /metadata/primary-keys:
+    get:
+      operationId: getMetadataPrimaryKeys
+      summary: Get primary key information
+      description: Returns primary key columns for specified table
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+        - name: catalog
+          in: query
+          description: Catalog name filter (optional)
+          schema:
+            type: string
+        - name: schema
+          in: query
+          description: Schema name filter (optional)
+          schema:
+            type: string
+        - name: table
+          in: query
+          description: Table name
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Primary keys retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetadataPrimaryKeysResponse"
+        "404":
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/change-password:
+    post:
+      operationId: changePassword
+      summary: Change user password
+      description: Changes the password for the current user
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordRequest"
+      responses:
+        "200":
+          description: Password changed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChangePasswordResponse"
+        "400":
+          description: Invalid current password or new password too short
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  parameters:
+    SessionId:
+      name: X-Clouderby-Session-Id
+      in: header
+      required: true
+      description: Session ID returned from POST /sessions
+      schema:
+        type: string
+        format: uuid
+
+    StatementId:
+      name: statementId
+      in: path
+      required: true
+      description: Statement ID returned from POST /statements
+      schema:
+        type: string
+
+  schemas:
+    # Health
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "UP"
+        service:
+          type: string
+          example: "clouderby-server"
+        timestamp:
+          type: string
+          format: date-time
+
+    # Session
+    SessionCreateRequest:
+      type: object
+      properties:
+        database:
+          type: string
+          description: Database name (optional)
+          example: "mydb"
+
+    SessionCreateResponse:
+      type: object
+      required:
+        - session-id
+        - server-version
+      properties:
+        session-id:
+          type: string
+          format: uuid
+          description: Session ID for subsequent requests
+        server-version:
+          type: string
+          description: Server version
+          example: "1.0.0"
+
+    SessionCloseResponse:
+      type: object
+      properties:
+        closed:
+          type: boolean
+
+    # Query
+    QueryRequest:
+      type: object
+      required:
+        - sql
+      properties:
+        sql:
+          type: string
+          description: SQL statement to execute
+          example: "SELECT * FROM users"
+        fetch-size:
+          type: integer
+          description: Maximum rows to fetch
+          default: 100
+
+    QueryResponse:
+      type: object
+      properties:
+        columns:
+          type: array
+          items:
+            $ref: "#/components/schemas/ColumnInfo"
+        rows:
+          type: array
+          items:
+            type: array
+            items: {}
+        done:
+          type: boolean
+          description: True if all rows have been fetched
+        cursor-id:
+          type: string
+          nullable: true
+          description: Server-side cursor ID for fetching remaining rows (present when done=false)
+
+    UpdateResponse:
+      type: object
+      properties:
+        update-count:
+          type: integer
+          description: Number of rows affected
+        last-insert-id:
+          type: integer
+          format: int64
+          description: Last inserted row ID (for INSERT)
+
+    ColumnInfo:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Column name
+        type:
+          type: string
+          description: Column type (INTEGER, TEXT, REAL, BLOB)
+          enum: [INTEGER, TEXT, REAL, BLOB]
+        table-name:
+          type: string
+          description: Source table name
+        nullable:
+          type: integer
+          description: "Nullable: 0=NO, 1=YES, 2=UNKNOWN"
+        auto-increment:
+          type: boolean
+          description: Whether column is auto-increment
+
+    # Statement
+    StatementCreateRequest:
+      type: object
+      required:
+        - sql
+      properties:
+        sql:
+          type: string
+          description: SQL statement with ? placeholders
+          example: "INSERT INTO users (name, email) VALUES (?, ?)"
+
+    StatementCreateResponse:
+      type: object
+      properties:
+        statement-id:
+          type: string
+          description: Statement ID for subsequent execute calls
+        param-count:
+          type: integer
+          description: Number of parameters in the statement
+
+    StatementExecuteRequest:
+      type: object
+      properties:
+        params:
+          type: array
+          items:
+            $ref: "#/components/schemas/Parameter"
+        query:
+          type: boolean
+          description: True if expecting result set
+          default: false
+        fetch-size:
+          type: integer
+          default: 100
+
+    Parameter:
+      type: object
+      required:
+        - index
+        - type
+      properties:
+        index:
+          type: integer
+          description: 1-based parameter index
+        type:
+          type: string
+          enum: [INTEGER, TEXT, REAL, BLOB, NULL, VARCHAR, CHAR, BIGINT, SMALLINT, TINYINT, FLOAT, DOUBLE, DECIMAL, NUMERIC, BOOLEAN, DATE, TIME, TIMESTAMP, BINARY, VARBINARY, CLOB, NCHAR, NVARCHAR, NCLOB]
+        value:
+          description: Parameter value (null for NULL type)
+
+    StatementCloseResponse:
+      type: object
+      properties:
+        closed:
+          type: boolean
+
+    StatementMetadataResponse:
+      type: object
+      properties:
+        columns:
+          type: array
+          items:
+            $ref: "#/components/schemas/ColumnInfo"
+
+    StatementBatchRequest:
+      type: object
+      required:
+        - param-sets
+      properties:
+        param-sets:
+          type: array
+          items:
+            type: array
+            items:
+              $ref: "#/components/schemas/Parameter"
+          description: List of parameter sets for batch execution
+
+    StatementBatchResponse:
+      type: object
+      properties:
+        update-counts:
+          type: array
+          items:
+            type: integer
+          description: Update count for each batch entry
+
+    # Metadata
+    MetadataInfoResponse:
+      type: object
+      properties:
+        product-name:
+          type: string
+          description: Database product name
+          example: "clouderby"
+        product-version:
+          type: string
+          description: Database product version
+          example: "1.0.0"
+        driver-name:
+          type: string
+          description: Driver name
+          example: "clouderby JDBC Driver"
+        driver-version:
+          type: string
+          description: Driver version
+          example: "1.0.0"
+        identifier-quote-string:
+          type: string
+          description: String used to quote identifiers
+          example: "\""
+        catalog-separator:
+          type: string
+          description: Separator between catalog and table name
+          example: "."
+        catalog-term:
+          type: string
+          description: Term for catalog
+          example: "database"
+        schema-term:
+          type: string
+          description: Term for schema
+          example: "schema"
+
+    MetadataTablesResponse:
+      type: object
+      properties:
+        tables:
+          type: array
+          items:
+            $ref: "#/components/schemas/TableInfo"
+
+    TableInfo:
+      type: object
+      properties:
+        catalog:
+          type: string
+          nullable: true
+        schema:
+          type: string
+          nullable: true
+        name:
+          type: string
+          description: Table name
+        type:
+          type: string
+          description: Table type (TABLE, VIEW, etc.)
+        remarks:
+          type: string
+          nullable: true
+
+    MetadataColumnsResponse:
+      type: object
+      properties:
+        columns:
+          type: array
+          items:
+            $ref: "#/components/schemas/ColumnMetadata"
+
+    ColumnMetadata:
+      type: object
+      properties:
+        catalog:
+          type: string
+          nullable: true
+        schema:
+          type: string
+          nullable: true
+        table-name:
+          type: string
+          description: Table name
+        column-name:
+          type: string
+          description: Column name
+        data-type:
+          type: integer
+          description: JDBC SQL type code
+        type-name:
+          type: string
+          description: SQL type name
+        column-size:
+          type: integer
+          description: Column size
+        nullable:
+          type: integer
+          description: "Nullable: 0=NO, 1=YES, 2=UNKNOWN"
+        remarks:
+          type: string
+          nullable: true
+        default-value:
+          type: string
+          nullable: true
+        ordinal-position:
+          type: integer
+          description: 1-based column position
+        is-auto-increment:
+          type: boolean
+          description: Whether column is auto-increment
+
+    MetadataPrimaryKeysResponse:
+      type: object
+      properties:
+        primary-keys:
+          type: array
+          items:
+            $ref: "#/components/schemas/PrimaryKeyInfo"
+
+    PrimaryKeyInfo:
+      type: object
+      properties:
+        catalog:
+          type: string
+          nullable: true
+        schema:
+          type: string
+          nullable: true
+        table-name:
+          type: string
+          description: Table name
+        column-name:
+          type: string
+          description: Column name
+        key-seq:
+          type: integer
+          description: Sequence number within primary key
+        pk-name:
+          type: string
+          nullable: true
+          description: Primary key name
+
+    # Transaction
+    TransactionResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [STARTED, COMMITTED, ROLLED_BACK]
+          description: Transaction status
+        in-transaction:
+          type: boolean
+          description: Whether a transaction is currently active
+
+    # Error
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+
+    # Change Password
+    ChangePasswordRequest:
+      type: object
+      required:
+        - currentPassword
+        - newPassword
+      properties:
+        currentPassword:
+          type: string
+          description: Current password
+        newPassword:
+          type: string
+          description: New password (minimum 4 characters)
+
+    ChangePasswordResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string

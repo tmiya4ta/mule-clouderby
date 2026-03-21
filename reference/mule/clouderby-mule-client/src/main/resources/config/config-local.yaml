@@ -1,0 +1,15 @@
+# clouderby Client App Configuration for local/standalone Mule
+# Connects to clouderby-server via public CloudHub URL
+
+http:
+  port: "8082"
+
+# Remote clouderby server connection (public CloudHub URL)
+clouderby:
+  host: "clouderby-mule-server-2m6ahj.pnwfdv.jpn-e1.cloudhub.io"
+  port: "443"
+  database: "app"
+  secure: "true"
+  debug: "true"
+  user: "mule"
+  password: "mule123"

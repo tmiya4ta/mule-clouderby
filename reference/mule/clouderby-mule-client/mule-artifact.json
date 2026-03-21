@@ -1,0 +1,14 @@
+{
+  "minMuleVersion": "4.10.0",
+  "configs": [
+    "global-config.xml",
+    "api-implementation.xml"
+  ],
+  "secureProperties": [],
+  "redeploymentEnabled": true,
+  "exportedPackages": [],
+  "exportedResources": [
+    "config/config-local.yaml",
+    "config/config-cloudhub.yaml"
+  ]
+}

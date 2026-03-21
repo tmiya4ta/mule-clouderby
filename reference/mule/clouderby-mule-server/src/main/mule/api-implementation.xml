@@ -1,0 +1,681 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+      xmlns:http="http://www.mulesoft.org/schema/mule/http"
+      xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+      xmlns:java="http://www.mulesoft.org/schema/mule/java"
+      xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit"
+      xsi:schemaLocation="
+        http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+        http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+        http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+        http://www.mulesoft.org/schema/mule/java http://www.mulesoft.org/schema/mule/java/current/mule-java.xsd
+        http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd">
+
+    <!-- ============================================ -->
+    <!-- Sub-flows                                    -->
+    <!-- ============================================ -->
+
+    <sub-flow name="validate-session">
+        <set-variable variableName="sessionId" value="#[attributes.headers.'x-clouderby-session-id' default '']"/>
+        <java:invoke-static class="com.muledev.server.SqlExecutor" method="validateSession(String)" target="sessionValid">
+            <java:args>#[{sessionId: vars.sessionId}]</java:args>
+        </java:invoke-static>
+    </sub-flow>
+
+    <!-- ============================================ -->
+    <!-- APIKit Main Router                          -->
+    <!-- ============================================ -->
+
+    <flow name="clouderby-api-main">
+        <http:listener doc:name="HTTP Listener" config-ref="HTTP_Listener_config" path="/*">
+            <http:response statusCode="#[vars.httpStatus default 200]"/>
+            <http:error-response statusCode="#[vars.httpStatus default 500]"/>
+        </http:listener>
+        <apikit:router config-ref="clouderby-api-config"/>
+        <error-handler>
+            <on-error-continue type="JAVA:INVOCATION">
+                <ee:transform doc:name="Route Java errors">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+var c1 = error.cause
+var c2 = c1.cause default null
+var c3 = if (c2 != null) (c2.cause default null) else null
+var c4 = if (c3 != null) (c3.cause default null) else null
+var root = if (c4 != null) c4 else if (c3 != null) c3 else if (c2 != null) c2 else c1
+var err = root.message default (c1.message default error.description)
+fun extractMsg(prefix) =
+    if (err contains (prefix ++ ":"))
+        trim(err[(err find (prefix ++ ":"))[0] + sizeOf(prefix) + 1 to -1])
+    else null
+---
+if (err contains "SESSION_NOT_FOUND")
+    {error: extractMsg("SESSION_NOT_FOUND") default "Session not found"}
+else if ((err contains "TX_ALREADY_ACTIVE") or (err contains "TX_NOT_ACTIVE"))
+    {error: extractMsg("TX_ALREADY_ACTIVE") default (extractMsg("TX_NOT_ACTIVE") default "Transaction error")}
+else if (err contains "STMT_NOT_FOUND")
+    {error: extractMsg("STMT_NOT_FOUND") default "Statement not found"}
+else
+    {error: "SQL execution failed: " ++ err}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus"><![CDATA[%dw 2.0
+output application/java
+var c1 = error.cause
+var c2 = c1.cause default null
+var c3 = if (c2 != null) (c2.cause default null) else null
+var c4 = if (c3 != null) (c3.cause default null) else null
+var root = if (c4 != null) c4 else if (c3 != null) c3 else if (c2 != null) c2 else c1
+var err = root.message default (c1.message default error.description)
+---
+if (err contains "SESSION_NOT_FOUND") 401
+else if ((err contains "TX_ALREADY_ACTIVE") or (err contains "TX_NOT_ACTIVE")) 400
+else if (err contains "STMT_NOT_FOUND") 404
+else 400]]></ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-continue>
+            <on-error-continue type="APIKIT:BAD_REQUEST">
+                <set-variable variableName="httpStatus" value="400"/>
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{error: "Bad Request: " ++ error.description}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </on-error-continue>
+            <on-error-continue type="APIKIT:NOT_FOUND">
+                <set-variable variableName="httpStatus" value="404"/>
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{error: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </on-error-continue>
+            <on-error-continue type="APIKIT:METHOD_NOT_ALLOWED">
+                <set-variable variableName="httpStatus" value="405"/>
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{error: "Method not allowed"}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </on-error-continue>
+            <on-error-continue type="ANY">
+                <set-variable variableName="httpStatus" value="500"/>
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{error: error.description}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </on-error-continue>
+        </error-handler>
+    </flow>
+
+    <!-- ============================================ -->
+    <!-- APIKit Implementation Flows                 -->
+    <!-- ============================================ -->
+
+    <!-- GET /health -->
+    <flow name="get:\health:clouderby-api-config">
+        <ee:transform doc:name="Health Response">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    status: "UP",
+    service: "clouderby-server",
+    timestamp: now()
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+
+    <!-- POST /sessions -->
+    <flow name="post:\sessions:application\json:clouderby-api-config">
+        <choice>
+            <when expression="#[payload.user == '${clouderby.user}' and payload.password == '${clouderby.password}']">
+                <java:invoke-static class="com.muledev.server.SqlExecutor" method="createSession(String)">
+                    <java:args>#[{database: payload.database default 'default'}]</java:args>
+                </java:invoke-static>
+                <logger level="INFO" message='#["[CLOUDERBY] Session opened: " ++ payload."session-id"]'/>
+                <ee:transform doc:name="Session created">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </when>
+            <otherwise>
+                <set-variable variableName="httpStatus" value="401"/>
+                <ee:transform doc:name="Auth failed">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{error: "Authentication failed"}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </otherwise>
+        </choice>
+    </flow>
+
+    <!-- DELETE /sessions -->
+    <flow name="delete:\sessions:clouderby-api-config">
+        <set-variable variableName="sessionId" value="#[attributes.headers.'x-clouderby-session-id' default '']"/>
+        <java:invoke-static class="com.muledev.server.SqlExecutor" method="closeSession(String)">
+            <java:args>#[{sessionId: vars.sessionId}]</java:args>
+        </java:invoke-static>
+        <logger level="INFO" message='#["[CLOUDERBY] Session closed: " ++ vars.sessionId]'/>
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+
+    <!-- POST /queries -->
+    <flow name="post:\queries:application\json:clouderby-api-config">
+        <flow-ref name="validate-session"/>
+        <java:invoke-static class="com.muledev.server.SqlExecutor" method="executeDirectSql(Object, Object, Object)">
+            <java:args>#[{
+                sessionId: vars.sessionId,
+                sql: payload.sql,
+                fetchSize: payload.'fetch-size' default 100
+            }]</java:args>
+        </java:invoke-static>
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler ref="api-error-handler"/>
+    </flow>
+
+    <!-- POST /statements -->
+    <flow name="post:\statements:application\json:clouderby-api-config">
+        <flow-ref name="validate-session"/>
+        <java:invoke-static class="com.muledev.server.SqlExecutor" method="createStatement(String, String)">
+            <java:args>#[{
+                sessionId: vars.sessionId,
+                sql: payload.sql
+            }]</java:args>
+        </java:invoke-static>
+        <ee:transform doc:name="Statement created">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler ref="api-error-handler"/>
+    </flow>
+
+    <!-- DELETE /statements/{statementId} -->
+    <flow name="delete:\statements\(statementId):clouderby-api-config">
+        <flow-ref name="validate-session"/>
+        <java:invoke-static class="com.muledev.server.SqlExecutor" method="closeStatement(String, String)">
+            <java:args>#[{
+                sessionId: vars.sessionId,
+                stmtId: attributes.uriParams.statementId
+            }]</java:args>
+        </java:invoke-static>
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler ref="api-error-handler"/>
+    </flow>
+
+    <!-- POST /statements/{statementId}/execute -->
+    <flow name="post:\statements\(statementId)\execute:application\json:clouderby-api-config">
+        <flow-ref name="validate-session"/>
+        <java:invoke-static class="com.muledev.server.SqlExecutor" method="executePrepared(Object, Object, Object, Object, Object)">
+            <java:args>#[{
+                sessionId: vars.sessionId,
+                stmtId: attributes.uriParams.statementId,
+                params: payload.params default [],
+                isQuery: payload.query default false,
+                fetchSize: payload.'fetch-size' default 100
+            }]</java:args>
+        </java:invoke-static>
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler ref="api-error-handler"/>
+    </flow>
+
+    <!-- GET /statements/{statementId}/metadata -->
+    <flow name="get:\statements\(statementId)\metadata:clouderby-api-config">
+        <flow-ref name="validate-session"/>
+        <ee:transform doc:name="Empty metadata">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{columns: []}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler ref="api-error-handler"/>
+    </flow>
+
+    <!-- POST /statements/{statementId}/batch -->
+    <flow name="post:\statements\(statementId)\batch:application\json:clouderby-api-config">
+        <flow-ref name="validate-session"/>
+        <java:invoke-static class="com.muledev.server.SqlExecutor" method="executeBatch(Object, Object, Object)">
+            <java:args>#[{
+                sessionId: vars.sessionId,
+                stmtId: attributes.uriParams.statementId,
+                paramSets: payload.'param-sets' default []
+            }]</java:args>
+        </java:invoke-static>
+        <ee:transform doc:name="Build batch response">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler ref="api-error-handler"/>
+    </flow>
+
+    <!-- POST /cursors/{cursorId}/fetch -->
+    <flow name="post:\cursors\(cursorId)\fetch:application\json:clouderby-api-config">
+        <flow-ref name="validate-session"/>
+        <java:invoke-static class="com.muledev.server.SqlExecutor" method="fetchCursor(Object, Object, Object)">
+            <java:args>#[{
+                sessionId: vars.sessionId,
+                cursorId: attributes.uriParams.cursorId,
+                fetchSize: payload.'fetch-size' default 100
+            }]</java:args>
+        </java:invoke-static>
+        <ee:transform doc:name="Cursor fetch response">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler ref="api-error-handler"/>
+    </flow>
+
+    <!-- DELETE /cursors/{cursorId} -->
+    <flow name="delete:\cursors\(cursorId):clouderby-api-config">
+        <flow-ref name="validate-session"/>
+        <java:invoke-static class="com.muledev.server.SqlExecutor" method="closeCursor(Object, Object)">
+            <java:args>#[{
+                sessionId: vars.sessionId,
+                cursorId: attributes.uriParams.cursorId
+            }]</java:args>
+        </java:invoke-static>
+        <ee:transform doc:name="Cursor close response">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler ref="api-error-handler"/>
+    </flow>
+
+    <!-- GET /metadata/info -->
+    <flow name="get:\metadata\info:clouderby-api-config">
+        <flow-ref name="validate-session"/>
+        <ee:transform doc:name="Metadata info">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    "product-name": "clouderby",
+    "product-version": "1.0.0",
+    "driver-name": "clouderby JDBC Driver",
+    "driver-version": "1.0.0",
+    "identifier-quote-string": "\"",
+    "catalog-separator": ".",
+    "catalog-term": "database",
+    "schema-term": "schema"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler ref="api-error-handler"/>
+    </flow>
+
+    <!-- GET /metadata/tables -->
+    <flow name="get:\metadata\tables:clouderby-api-config">
+        <flow-ref name="validate-session"/>
+        <set-variable variableName="tablePattern" value="#[attributes.queryParams.tablePattern default '%']"/>
+        <java:invoke-static class="com.muledev.server.SqlExecutor" method="executeMetadataQuery(String, String, List)">
+            <java:args>#[{
+                sessionId: vars.sessionId,
+                sql: "SELECT T.TABLENAME AS NAME, CASE T.TABLETYPE WHEN 'T' THEN 'TABLE' WHEN 'V' THEN 'VIEW' ELSE T.TABLETYPE END AS TYPE FROM SYS.SYSTABLES T JOIN SYS.SYSSCHEMAS S ON T.SCHEMAID = S.SCHEMAID WHERE S.SCHEMANAME = 'APP' AND T.TABLETYPE IN ('T', 'V') AND T.TABLENAME LIKE ? ORDER BY T.TABLENAME",
+                params: [vars.tablePattern]
+            }]</java:args>
+        </java:invoke-static>
+        <ee:transform doc:name="Build tables response">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    tables: payload map (row) -> {
+        name: row.NAME,
+        "type": row."TYPE"
+    },
+    count: sizeOf(payload)
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler ref="api-error-handler"/>
+    </flow>
+
+    <!-- GET /metadata/columns -->
+    <flow name="get:\metadata\columns:clouderby-api-config">
+        <flow-ref name="validate-session"/>
+        <set-variable variableName="tablePattern" value="#[attributes.queryParams.tablePattern default '%']"/>
+        <set-variable variableName="columnPattern" value="#[attributes.queryParams.columnPattern default '%']"/>
+        <java:invoke-static class="com.muledev.server.SqlExecutor" method="executeMetadataQuery(String, String, List)">
+            <java:args>#[{
+                sessionId: vars.sessionId,
+                sql: "SELECT T.TABLENAME, C.COLUMNNAME, CAST(C.COLUMNDATATYPE AS VARCHAR(128)) AS TYPE_INFO, C.COLUMNNUMBER, C.COLUMNDEFAULTID, CASE WHEN C.AUTOINCREMENTVALUE IS NOT NULL THEN 'YES' ELSE 'NO' END AS IS_AUTOINCREMENT FROM SYS.SYSCOLUMNS C JOIN SYS.SYSTABLES T ON C.REFERENCEID = T.TABLEID JOIN SYS.SYSSCHEMAS S ON T.SCHEMAID = S.SCHEMAID WHERE S.SCHEMANAME = 'APP' AND T.TABLETYPE = 'T' AND T.TABLENAME LIKE ? AND C.COLUMNNAME LIKE ? ORDER BY T.TABLENAME, C.COLUMNNUMBER",
+                params: [vars.tablePattern, vars.columnPattern]
+            }]</java:args>
+        </java:invoke-static>
+        <ee:transform doc:name="Build columns response">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+fun parseTypeInfo(ti) = do {
+    var cleaned = upper(trim((ti splitBy " GENERATED")[0]))
+    var isNotNull = cleaned contains "NOT NULL"
+    var typeStr = trim((cleaned splitBy " NOT NULL")[0])
+    var parts = typeStr splitBy "("
+    var typeName = trim(parts[0])
+    var sizeStr = if (sizeOf(parts) > 1) trim((parts[1] splitBy ")")[0]) else ""
+    var sizeParts = sizeStr splitBy ","
+    var colSize = if (sizeStr != "") (trim(sizeParts[0]) as Number default 0) else (typeName match {
+        case "INTEGER" -> 10
+        case "BIGINT" -> 19
+        case "SMALLINT" -> 5
+        case "DOUBLE" -> 15
+        case "REAL" -> 7
+        case "DECIMAL" -> 31
+        case "DATE" -> 10
+        case "TIMESTAMP" -> 29
+        case "BOOLEAN" -> 1
+        else -> 255
+    })
+    ---
+    {typeName: typeName, colSize: colSize, nullable: if (isNotNull) 0 else 1}
+}
+fun mapDataType(tn) = tn match {
+    case "INTEGER" -> 4
+    case "BIGINT" -> -5
+    case "SMALLINT" -> 5
+    case "DOUBLE" -> 8
+    case "REAL" -> 7
+    case "FLOAT" -> 6
+    case "DECIMAL" -> 3
+    case "NUMERIC" -> 2
+    case "VARCHAR" -> 12
+    case "CHAR" -> 1
+    case "CLOB" -> 2005
+    case "BLOB" -> 2004
+    case "DATE" -> 91
+    case "TIME" -> 92
+    case "TIMESTAMP" -> 93
+    case "BOOLEAN" -> 16
+    case "XML" -> 2009
+    else -> 12
+}
+---
+{
+    columns: payload map (row) -> do {
+        var ti = parseTypeInfo(row.TYPE_INFO default "VARCHAR(255)")
+        ---
+        {
+            catalog: null,
+            schema: "APP",
+            "table-name": row.TABLENAME,
+            "column-name": row.COLUMNNAME,
+            "data-type": mapDataType(ti.typeName),
+            "type-name": ti.typeName,
+            "column-size": ti.colSize,
+            nullable: ti.nullable,
+            "default-value": null,
+            remarks: null,
+            "ordinal-position": row.COLUMNNUMBER,
+            "is-auto-increment": row.IS_AUTOINCREMENT == "YES"
+        }
+    }
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler ref="api-error-handler"/>
+    </flow>
+
+    <!-- GET /metadata/primary-keys -->
+    <flow name="get:\metadata\primary-keys:clouderby-api-config">
+        <flow-ref name="validate-session"/>
+        <set-variable variableName="tableName" value="#[upper(attributes.queryParams.table default '')]"/>
+        <choice>
+            <when expression="#[vars.tableName == '']">
+                <set-variable variableName="httpStatus" value="400"/>
+                <ee:transform>
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{error: "Table name is required"}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </when>
+            <otherwise>
+                <java:invoke-static class="com.muledev.server.SqlExecutor" method="executeMetadataQuery(String, String, List)" target="pkInfo">
+                    <java:args>#[{
+                        sessionId: vars.sessionId,
+                        sql: "SELECT C.CONSTRAINTNAME AS PK_NAME, CAST(CG.DESCRIPTOR AS VARCHAR(512)) AS DESCRIPTOR FROM SYS.SYSCONSTRAINTS C JOIN SYS.SYSKEYS K ON C.CONSTRAINTID = K.CONSTRAINTID JOIN SYS.SYSCONGLOMERATES CG ON K.CONGLOMERATEID = CG.CONGLOMERATEID JOIN SYS.SYSTABLES T ON C.TABLEID = T.TABLEID JOIN SYS.SYSSCHEMAS S ON T.SCHEMAID = S.SCHEMAID WHERE C.TYPE = 'P' AND S.SCHEMANAME = 'APP' AND T.TABLENAME = ?",
+                        params: [vars.tableName]
+                    }]</java:args>
+                </java:invoke-static>
+                <java:invoke-static class="com.muledev.server.SqlExecutor" method="executeMetadataQuery(String, String, List)">
+                    <java:args>#[{
+                        sessionId: vars.sessionId,
+                        sql: "SELECT COLUMNNAME, COLUMNNUMBER FROM SYS.SYSCOLUMNS WHERE REFERENCEID = (SELECT TABLEID FROM SYS.SYSTABLES T JOIN SYS.SYSSCHEMAS S ON T.SCHEMAID = S.SCHEMAID WHERE S.SCHEMANAME = 'APP' AND T.TABLENAME = ?) ORDER BY COLUMNNUMBER",
+                        params: [vars.tableName]
+                    }]</java:args>
+                </java:invoke-static>
+                <ee:transform doc:name="Build PK response">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+var pkInfo = vars.pkInfo
+var allCols = payload
+var descriptor = if (sizeOf(pkInfo) > 0) (pkInfo[0].DESCRIPTOR default "") else ""
+var pkName = if (sizeOf(pkInfo) > 0) pkInfo[0].PK_NAME else null
+var openIdx = (descriptor find "(")[0] default -1
+var closeIdx = (descriptor find ")")[0] default -1
+var colNumsStr = if (openIdx >= 0 and closeIdx > openIdx) (descriptor[(openIdx + 1) to (closeIdx - 1)]) else ""
+var colNums = if (colNumsStr != "") ((splitBy(colNumsStr, ",")) map (trim($) as Number)) else []
+---
+{
+    "primary-keys": colNums map (num, idx) -> {
+        catalog: null,
+        schema: "APP",
+        "table-name": vars.tableName,
+        "column-name": (allCols filter ($.COLUMNNUMBER == num))[0].COLUMNNAME default "",
+        "key-seq": idx + 1,
+        "pk-name": pkName
+    }
+}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </otherwise>
+        </choice>
+        <error-handler ref="api-error-handler"/>
+    </flow>
+
+    <!-- POST /transactions/begin -->
+    <flow name="post:\transactions\begin:clouderby-api-config">
+        <flow-ref name="validate-session"/>
+        <java:invoke-static class="com.muledev.server.SqlExecutor" method="beginTransaction(String)">
+            <java:args>#[{sessionId: vars.sessionId}]</java:args>
+        </java:invoke-static>
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler ref="api-error-handler"/>
+    </flow>
+
+    <!-- POST /transactions/commit -->
+    <flow name="post:\transactions\commit:clouderby-api-config">
+        <flow-ref name="validate-session"/>
+        <java:invoke-static class="com.muledev.server.SqlExecutor" method="commitTransaction(String)">
+            <java:args>#[{sessionId: vars.sessionId}]</java:args>
+        </java:invoke-static>
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler ref="api-error-handler"/>
+    </flow>
+
+    <!-- POST /transactions/rollback -->
+    <flow name="post:\transactions\rollback:clouderby-api-config">
+        <flow-ref name="validate-session"/>
+        <java:invoke-static class="com.muledev.server.SqlExecutor" method="rollbackTransaction(String)">
+            <java:args>#[{sessionId: vars.sessionId}]</java:args>
+        </java:invoke-static>
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler ref="api-error-handler"/>
+    </flow>
+
+    <!-- POST /auth/change-password -->
+    <flow name="post:\auth\change-password:application\json:clouderby-api-config">
+        <set-variable variableName="httpStatus" value="501"/>
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{error: "Password change not supported (property-based authentication)"}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+
+    <!-- ============================================ -->
+    <!-- Additional Non-API Endpoints                -->
+    <!-- ============================================ -->
+
+    <!-- GET / - Serve UI -->
+    <flow name="ui-index-flow">
+        <http:listener doc:name="GET /" config-ref="HTTP_Listener_config" path="/" allowedMethods="GET"/>
+        <parse-template doc:name="Parse Template" location="static/index.html"/>
+        <set-payload value="#[payload]" doc:name="Set Payload" mimeType="text/html"/>
+    </flow>
+
+    <!-- GET /api/db/tables - List all tables (for UI) -->
+    <flow name="db-tables-flow">
+        <http:listener doc:name="GET /api/db/tables" config-ref="HTTP_Listener_config" path="/api/db/tables" allowedMethods="GET"/>
+        <java:invoke-static class="com.muledev.server.SqlExecutor" method="executeSystemQuery(String, List)">
+            <java:args>#[{
+                sql: "SELECT T.TABLENAME AS NAME FROM SYS.SYSTABLES T JOIN SYS.SYSSCHEMAS S ON T.SCHEMAID = S.SCHEMAID WHERE S.SCHEMANAME = 'APP' AND T.TABLETYPE = 'T' ORDER BY T.TABLENAME",
+                params: null
+            }]</java:args>
+        </java:invoke-static>
+        <ee:transform doc:name="Transform">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+    tables: payload map $.NAME,
+    count: sizeOf(payload)
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler ref="global-error-handler"/>
+    </flow>
+
+    <!-- GET /api/completions - Get SQL completion candidates (for UI) -->
+    <flow name="completions-flow">
+        <http:listener doc:name="GET /api/completions" config-ref="HTTP_Listener_config" path="/api/completions" allowedMethods="GET"/>
+        <java:invoke-static class="com.muledev.server.SqlExecutor" method="executeSystemQuery(String, List)">
+            <java:args>#[{
+                sql: "SELECT T.TABLENAME AS NAME FROM SYS.SYSTABLES T JOIN SYS.SYSSCHEMAS S ON T.SCHEMAID = S.SCHEMAID WHERE S.SCHEMANAME = 'APP' AND T.TABLETYPE = 'T' ORDER BY T.TABLENAME",
+                params: null
+            }]</java:args>
+        </java:invoke-static>
+        <ee:transform doc:name="Build completions">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+var sqlKeywords = ["SELECT", "FROM", "WHERE", "INSERT", "INTO", "VALUES", "UPDATE", "SET", "DELETE",
+                   "CREATE", "TABLE", "DROP", "ALTER", "ADD", "INDEX", "JOIN", "LEFT", "RIGHT", "INNER",
+                   "OUTER", "ON", "AND", "OR", "NOT", "NULL", "IS", "IN", "LIKE", "BETWEEN", "AS",
+                   "ORDER", "BY", "ASC", "DESC", "GROUP", "HAVING", "FETCH", "OFFSET", "DISTINCT",
+                   "COUNT", "SUM", "AVG", "MIN", "MAX", "COALESCE", "CASE", "WHEN", "THEN", "ELSE", "END",
+                   "INTEGER", "VARCHAR", "DOUBLE", "DECIMAL", "BOOLEAN", "DATE", "TIMESTAMP", "CLOB", "BLOB",
+                   "PRIMARY", "KEY", "GENERATED", "ALWAYS", "IDENTITY", "UNIQUE", "DEFAULT"]
+---
+{
+    keywords: sqlKeywords,
+    tables: payload map $.NAME,
+    columns: []
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler ref="global-error-handler"/>
+    </flow>
+
+</mule>

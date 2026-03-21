@@ -1,0 +1,4 @@
+SUPPLIER_ID,SUPPLIER_NAME,SUPPLIER_NAME_KANA,SUPPLIER_NAME_EN,SUPPLIER_TYPE,ADDRESS,COUNTRY_CODE,PHONE,EMAIL,PAYMENT_TERMS,LEAD_TIME_DAYS,QUALITY_RATING,DELIVERY_RATING
+SUP001,東和メタル株式会社,トウワメタル,"Towa Metal Co., Ltd.",MANUFACTURER,東京都品川区東品川1-1-1,JPN,03-1234-5678,sales@towa-metal.co.jp,NET30,14,4.5,4.8
+SUP002,関西軽合金工業,カンサイケイゴウキン,Kansai Light Alloy Industry,MANUFACTURER,大阪府堺市堺区築港南町2-2-2,JPN,072-2345-6789,info@kansai-alloy.co.jp,NET45,21,4.2,4.0
+SUP003,中部ケミテック株式会社,チュウブケミテック,Chubu Chemitech,DISTRIBUTOR,愛知県名古屋市港区金城ふ頭3-3-3,JPN,052-3456-7890,order@chubu-chemitech.co.jp,NET30,7,4.0,4.5

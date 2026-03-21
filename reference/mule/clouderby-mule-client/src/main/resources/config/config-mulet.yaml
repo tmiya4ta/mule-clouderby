@@ -1,0 +1,15 @@
+# clouderby Client App Configuration for mulet testing
+# Connects to CloudHub clouderby-server via public URL
+
+http:
+  port: "9082"
+
+# Remote clouderbyd connection (via public CloudHub URL)
+clouderby:
+  host: "db04-2m6ahj.pnwfdv.jpn-e1.cloudhub.io"
+  port: "443"
+  database: "app"
+  secure: "true"
+  debug: "true"
+  user: "mule"
+  password: "mule123"
