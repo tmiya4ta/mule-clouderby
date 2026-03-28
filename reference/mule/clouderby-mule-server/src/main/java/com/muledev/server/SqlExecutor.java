@@ -100,6 +100,13 @@ public class SqlExecutor {
         } else if ("CREATE".equals(keyword) || "DROP".equals(keyword) || "ALTER".equals(keyword)) {
             try (Statement stmt = conn.createStatement()) {
                 stmt.execute(sqlStr);
+            } catch (SQLException e) {
+                Map<String, Object> errResult = new LinkedHashMap<>();
+                errResult.put("error", true);
+                errResult.put("sql-state", e.getSQLState());
+                errResult.put("error-code", e.getErrorCode());
+                errResult.put("message", e.getMessage());
+                return errResult;
             }
             Map<String, Object> result = new LinkedHashMap<>();
             result.put("update-count", 0);
@@ -130,6 +137,13 @@ public class SqlExecutor {
                 try (PreparedStatement ps = conn.prepareStatement(sql)) {
                     setParameters(ps, paramList);
                     ps.execute();
+                } catch (SQLException e) {
+                    Map<String, Object> errResult = new LinkedHashMap<>();
+                    errResult.put("error", true);
+                    errResult.put("sql-state", e.getSQLState());
+                    errResult.put("error-code", e.getErrorCode());
+                    errResult.put("message", e.getMessage());
+                    return errResult;
                 }
                 Map<String, Object> result = new LinkedHashMap<>();
                 result.put("update-count", 0);
