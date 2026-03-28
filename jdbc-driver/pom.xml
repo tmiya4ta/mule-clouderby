@@ -6,7 +6,7 @@
 
     <groupId>io.gitlab.myst3m</groupId>
     <artifactId>clouderby-jdbc</artifactId>
-    <version>1.3.0</version>
+    <version>1.4.0</version>
     <packaging>jar</packaging>
 
     <name>clouderby-jdbc</name>
@@ -98,7 +98,7 @@
                 <configuration>
                     <archive>
                         <manifestEntries>
-                            <Automatic-Module-Name>com.muledev.jdbc</Automatic-Module-Name>
+                            <Automatic-Module-Name>io.gitlab.myst3m.clouderby.jdbc</Automatic-Module-Name>
                         </manifestEntries>
                     </archive>
                 </configuration>
