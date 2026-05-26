@@ -1,8 +1,10 @@
 package io.gitlab.myst3m.clouderby.jdbc;
 
 import io.gitlab.myst3m.clouderby.jdbc.http.HttpClient;
+import io.gitlab.myst3m.clouderby.jdbc.http.Protocol;
 
 import java.sql.*;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
@@ -17,6 +19,45 @@ public class ClouderbyConnection implements Connection {
     private boolean autoCommit = true;
     private boolean inTransaction = false;
     private int transactionIsolation = TRANSACTION_SERIALIZABLE;
+
+    private static final int STMT_CACHE_MAX = 64;
+    /**
+     * sql → cached prepare response. Bounded LRU.
+     * Evicted entries are DELETEed on the server in {@link #onEvict}.
+     * When a cached id is reused by a fresh PreparedStatement object, the object
+     * does NOT DELETE on close() — the cache owns the server-side lifecycle.
+     */
+    private final LinkedHashMap<String, Protocol.PrepareResponse> stmtCache =
+            new LinkedHashMap<>(16, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<String, Protocol.PrepareResponse> eldest) {
+                    if (size() > STMT_CACHE_MAX) {
+                        onEvict(eldest.getValue());
+                        return true;
+                    }
+                    return false;
+                }
+            };
+
+    private void onEvict(Protocol.PrepareResponse evicted) {
+        try {
+            httpClient.closeStatement(evicted.statementId);
+        } catch (SQLException ignored) {
+            // best-effort
+        }
+    }
+
+    Protocol.PrepareResponse getOrPrepareStatement(String sql) throws SQLException {
+        if (stmtCache != null) {
+            Protocol.PrepareResponse cached = stmtCache.get(sql);
+            if (cached != null) return cached;
+        }
+        Protocol.PrepareResponse fresh = httpClient.prepareStatement(sql);
+        if (stmtCache != null) {
+            stmtCache.put(sql, fresh);
+        }
+        return fresh;
+    }
 
     public ClouderbyConnection(String host, int port, String database) throws SQLException {
         this(host, port, database, false, null, null);
@@ -123,6 +164,17 @@ public class ClouderbyConnection implements Connection {
     @Override
     public void close() throws SQLException {
         if (!closed) {
+            // Drop all cached prepared statements so server can free them
+            if (stmtCache != null) {
+                for (Protocol.PrepareResponse cached : stmtCache.values()) {
+                    try {
+                        httpClient.closeStatement(cached.statementId);
+                    } catch (SQLException ignored) {
+                        // best-effort
+                    }
+                }
+                stmtCache.clear();
+            }
             // Rollback any pending transaction before closing
             if (inTransaction) {
                 try {

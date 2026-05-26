@@ -681,10 +681,10 @@ class ClouderbyPreparedStatementTest {
         }
 
         @Test
-        @DisplayName("close should close statement on server")
+        @DisplayName("close should NOT close server-side statement (owned by connection cache)")
         void testClose() throws SQLException {
             preparedStatement.close();
-            verify(httpClient).closeStatement("stmt-1");
+            verify(httpClient, never()).closeStatement("stmt-1");
         }
 
         @Test

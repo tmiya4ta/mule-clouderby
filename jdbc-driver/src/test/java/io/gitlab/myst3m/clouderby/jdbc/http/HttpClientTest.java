@@ -91,7 +91,7 @@ class HttpClientTest {
         void testExecuteRequest() {
             Protocol.ExecuteRequest request = new Protocol.ExecuteRequest("SELECT 1");
             assertThat(request.sql).isEqualTo("SELECT 1");
-            assertThat(request.fetchSize).isEqualTo(100);
+            assertThat(request.fetchSize).isEqualTo(1000);
         }
 
         @Test

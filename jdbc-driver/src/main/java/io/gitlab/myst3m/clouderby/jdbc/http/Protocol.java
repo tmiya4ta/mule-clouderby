@@ -32,7 +32,7 @@ public class Protocol {
     public static class ExecuteRequest {
         public String sql;
         @JsonProperty("fetch-size")
-        public int fetchSize = 100;
+        public int fetchSize = 1000;
 
         public ExecuteRequest(String sql) {
             this.sql = sql;
@@ -56,7 +56,7 @@ public class Protocol {
         public List<Parameter> params;
         public boolean query;
         @JsonProperty("fetch-size")
-        public int fetchSize = 100;
+        public int fetchSize = 1000;
 
         public StatementExecuteRequest(List<Parameter> params, boolean query) {
             this.params = params;
@@ -79,19 +79,49 @@ public class Protocol {
 
     // Response classes
 
+    /**
+     * Base for responses that may carry an error.
+     *
+     * Spec ErrorResponse uses {error: "message string"}. Some servers (the Mule
+     * reference) instead return {error: true, message: "..."}. This base accepts
+     * either shape and surfaces a single string via {@link #errorMessage()}.
+     */
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class OpenResponse {
+    public static class ErrorBase {
+        private String errorMessage;
+
+        @JsonProperty("error")
+        public void setError(Object value) {
+            if (value == null) return;
+            if (value instanceof Boolean) {
+                if ((Boolean) value && errorMessage == null) {
+                    errorMessage = "Server returned error";
+                }
+            } else {
+                String s = String.valueOf(value);
+                if (!s.isEmpty()) errorMessage = s;
+            }
+        }
+
+        @JsonProperty("message")
+        public void setMessage(String message) {
+            if (message != null) errorMessage = message;
+        }
+
+        public String errorMessage() { return errorMessage; }
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class OpenResponse extends ErrorBase {
         @JsonProperty("session-id")
         public String sessionId;
         @JsonProperty("server-version")
         public String serverVersion;
-        public String error;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class CloseResponse {
+    public static class CloseResponse extends ErrorBase {
         public boolean closed;
-        public String error;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -106,31 +136,28 @@ public class Protocol {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class QueryResponse {
+    public static class QueryResponse extends ErrorBase {
         public List<ColumnInfo> columns;
         public List<List<Object>> rows;
         public boolean done;
         @JsonProperty("cursor-id")
         public String cursorId;
-        public String error;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class UpdateResponse {
+    public static class UpdateResponse extends ErrorBase {
         @JsonProperty("update-count")
         public int updateCount;
         @JsonProperty("last-insert-id")
         public Long lastInsertId;
-        public String error;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class PrepareResponse {
+    public static class PrepareResponse extends ErrorBase {
         @JsonProperty("statement-id")
         public String statementId;
         @JsonProperty("param-count")
         public int paramCount;
-        public String error;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -144,7 +171,7 @@ public class Protocol {
      * Generic execute response that can contain either query or update results.
      */
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class ExecuteResponse {
+    public static class ExecuteResponse extends ErrorBase {
         // Query result fields
         public List<ColumnInfo> columns;
         public List<List<Object>> rows;
@@ -158,8 +185,6 @@ public class Protocol {
         @JsonProperty("last-insert-id")
         public Long lastInsertId;
 
-        public String error;
-
         public boolean isQuery() {
             return columns != null;
         }
@@ -167,9 +192,8 @@ public class Protocol {
 
     // Statement metadata response
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class StatementMetadataResponse {
+    public static class StatementMetadataResponse extends ErrorBase {
         public List<ColumnInfo> columns;
-        public String error;
     }
 
     // Cursor fetch request
@@ -193,16 +217,15 @@ public class Protocol {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class StatementBatchResponse {
+    public static class StatementBatchResponse extends ErrorBase {
         @JsonProperty("update-counts")
         public List<Integer> updateCounts;
-        public String error;
     }
 
     // Metadata API types
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class MetadataInfoResponse {
+    public static class MetadataInfoResponse extends ErrorBase {
         @JsonProperty("product-name")
         public String productName;
         @JsonProperty("product-version")
@@ -219,13 +242,11 @@ public class Protocol {
         public String catalogTerm;
         @JsonProperty("schema-term")
         public String schemaTerm;
-        public String error;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class MetadataTablesResponse {
+    public static class MetadataTablesResponse extends ErrorBase {
         public List<TableInfo> tables;
-        public String error;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -238,9 +259,8 @@ public class Protocol {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class MetadataColumnsResponse {
+    public static class MetadataColumnsResponse extends ErrorBase {
         public List<ColumnMetadata> columns;
-        public String error;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -268,10 +288,9 @@ public class Protocol {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class MetadataPrimaryKeysResponse {
+    public static class MetadataPrimaryKeysResponse extends ErrorBase {
         @JsonProperty("primary-keys")
         public List<PrimaryKeyInfo> primaryKeys;
-        public String error;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -291,10 +310,9 @@ public class Protocol {
     // Transaction API types
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class TransactionResponse {
+    public static class TransactionResponse extends ErrorBase {
         public String status;
         @JsonProperty("in-transaction")
         public boolean inTransaction;
-        public String error;
     }
 }

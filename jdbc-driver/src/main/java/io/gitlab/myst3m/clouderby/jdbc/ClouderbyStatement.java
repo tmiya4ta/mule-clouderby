@@ -12,7 +12,7 @@ public class ClouderbyStatement implements Statement {
     protected final ClouderbyConnection connection;
     protected final HttpClient httpClient;
     protected boolean closed = false;
-    protected int fetchSize = 100;
+    protected int fetchSize = 1000;
     protected int maxRows = 0;
     protected int queryTimeout = 0;
     protected ResultSet currentResultSet;

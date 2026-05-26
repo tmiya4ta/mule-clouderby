@@ -1,5 +1,6 @@
 package io.gitlab.myst3m.clouderby.jdbc;
 
+import io.gitlab.myst3m.clouderby.jdbc.http.HttpClient;
 import io.gitlab.myst3m.clouderby.jdbc.http.Protocol;
 
 import java.io.*;
@@ -8,6 +9,8 @@ import java.net.URL;
 import java.sql.*;
 import java.sql.Date;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 
 /**
  * JDBC ResultSet implementation for clouderbyd.
@@ -24,6 +27,7 @@ public class ClouderbyResultSet implements ResultSet {
     private boolean closed = false;
     private boolean wasNull = false;
     private Map<String, Integer> columnIndexMap;
+    private CompletableFuture<Protocol.QueryResponse> prefetch;
 
     public ClouderbyResultSet(ClouderbyStatement statement, Protocol.QueryResponse response) {
         this.statement = statement;
@@ -33,6 +37,27 @@ public class ClouderbyResultSet implements ResultSet {
         this.cursorId = response.cursorId;
         this.metaData = new ClouderbyResultSetMetaData(columns);
         buildColumnIndexMap();
+        schedulePrefetch();
+    }
+
+    private static final boolean PREFETCH_ENABLED =
+            !Boolean.parseBoolean(System.getProperty("clouderby.no-prefetch", "false"));
+
+    private void schedulePrefetch() {
+        if (!PREFETCH_ENABLED) return;
+        if (done || cursorId == null) return;
+        int fetchSize = statement.fetchSize;
+        if (fetchSize <= 0) fetchSize = 1000;
+        final String cid = cursorId;
+        final int fs = fetchSize;
+        final HttpClient http = statement.connection.getHttpClient();
+        prefetch = CompletableFuture.supplyAsync(() -> {
+            try {
+                return http.fetchCursor(cid, fs);
+            } catch (SQLException e) {
+                throw new CompletionException(e);
+            }
+        });
     }
 
     private void buildColumnIndexMap() {
@@ -72,32 +97,48 @@ public class ClouderbyResultSet implements ResultSet {
         if (currentRow < rows.size()) {
             return true;
         }
-        // Current page exhausted — fetch next page if cursor is open
-        if (!done && cursorId != null) {
+        Protocol.QueryResponse nextPage = null;
+        // Path 1: async prefetch is in flight — wait on it and pipeline the next one
+        if (prefetch != null) {
             try {
-                int fetchSize = statement.getFetchSize();
-                if (fetchSize <= 0) fetchSize = 100;
-                Protocol.QueryResponse nextPage = statement.connection.getHttpClient()
-                        .fetchCursor(cursorId, fetchSize);
-                List<List<Object>> newRows = nextPage.rows != null ? nextPage.rows : List.of();
-                this.done = nextPage.done;
-                this.cursorId = nextPage.cursorId;
-                // Replace rows with new page and reset position
-                this.rows = new ArrayList<>(newRows);
-                this.currentRow = 0;
-                return !newRows.isEmpty();
+                nextPage = prefetch.join();
+            } catch (CompletionException e) {
+                this.done = true;
+                this.cursorId = null;
+                return false;
+            } finally {
+                prefetch = null;
+            }
+        } else if (!done && cursorId != null) {
+            // Path 2: prefetch disabled (or first miss) — sync fetch
+            try {
+                int fs = statement.fetchSize;
+                if (fs <= 0) fs = 1000;
+                nextPage = statement.connection.getHttpClient().fetchCursor(cursorId, fs);
             } catch (SQLException e) {
-                // Cursor fetch failed — treat as end of results
                 this.done = true;
                 this.cursorId = null;
                 return false;
             }
         }
-        return false;
+        if (nextPage == null) {
+            return false;
+        }
+        List<List<Object>> newRows = nextPage.rows != null ? nextPage.rows : List.of();
+        this.done = nextPage.done;
+        this.cursorId = nextPage.cursorId;
+        this.rows = new ArrayList<>(newRows);
+        this.currentRow = 0;
+        schedulePrefetch();
+        return !newRows.isEmpty();
     }
 
     @Override
     public void close() throws SQLException {
+        if (prefetch != null) {
+            prefetch.cancel(true);
+            prefetch = null;
+        }
         if (!closed && cursorId != null) {
             try {
                 statement.connection.getHttpClient().closeCursor(cursorId);

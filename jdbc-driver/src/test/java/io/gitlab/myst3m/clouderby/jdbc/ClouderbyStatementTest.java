@@ -78,7 +78,7 @@ class ClouderbyStatementTest {
 
             assertThat(rs).isNotNull();
             assertThat(rs).isInstanceOf(ClouderbyResultSet.class);
-            verify(httpClient).executeQuery("SELECT 1", 100);
+            verify(httpClient).executeQuery("SELECT 1", 1000);
         }
 
         @Test
@@ -248,9 +248,9 @@ class ClouderbyStatementTest {
     class ConfigurationTests {
 
         @Test
-        @DisplayName("getFetchSize should return default 100")
+        @DisplayName("getFetchSize should return default 1000")
         void testGetFetchSize() throws SQLException {
-            assertThat(statement.getFetchSize()).isEqualTo(100);
+            assertThat(statement.getFetchSize()).isEqualTo(1000);
         }
 
         @Test

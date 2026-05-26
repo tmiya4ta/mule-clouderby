@@ -28,7 +28,7 @@ public class ClouderbyPreparedStatement extends ClouderbyStatement implements Pr
     public ClouderbyPreparedStatement(ClouderbyConnection connection, String sql) throws SQLException {
         super(connection);
         this.sql = sql;
-        Protocol.PrepareResponse response = httpClient.prepareStatement(sql);
+        Protocol.PrepareResponse response = connection.getOrPrepareStatement(sql);
         this.statementId = response.statementId;
         this.paramCount = response.paramCount;
     }
@@ -462,12 +462,9 @@ public class ClouderbyPreparedStatement extends ClouderbyStatement implements Pr
 
     @Override
     public void close() throws SQLException {
+        // Server-side statement id is owned by the connection's prepared-statement cache;
+        // do NOT close it here. The connection will drop it on close() or LRU eviction.
         if (!closed) {
-            try {
-                httpClient.closeStatement(statementId);
-            } catch (SQLException e) {
-                // Ignore errors on close
-            }
             super.close();
         }
     }

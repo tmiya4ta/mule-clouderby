@@ -4,11 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.sql.SQLException;
 import java.time.Duration;
+import java.util.zip.GZIPInputStream;
 
 /**
  * HTTP client for communicating with clouderbyd server.
@@ -92,9 +94,9 @@ public class HttpClient {
         try {
             var request = new Protocol.OpenRequest(database, user, password);
             var response = post("/sessions", request, Protocol.OpenResponse.class, false);
-            if (response.error != null) {
-                debug("<<< POST /sessions  ERROR: " + response.error);
-                throw new SQLException("Failed to open connection: " + response.error);
+            if (response.errorMessage() != null) {
+                debug("<<< POST /sessions  ERROR: " + response.errorMessage());
+                throw new SQLException("Failed to open connection: " + response.errorMessage());
             }
             this.sessionId = response.sessionId;
             debug("<<< POST /sessions  sessionId=" + response.sessionId + ", serverVersion=" + response.serverVersion);
@@ -124,9 +126,9 @@ public class HttpClient {
         try {
             var request = new Protocol.ExecuteRequest(sql, fetchSize);
             var response = post("/queries", request, Protocol.QueryResponse.class, true);
-            if (response.error != null) {
-                debug("<<< POST /queries  ERROR: " + response.error);
-                throw new SQLException(response.error);
+            if (response.errorMessage() != null) {
+                debug("<<< POST /queries  ERROR: " + response.errorMessage());
+                throw new SQLException(response.errorMessage());
             }
             debug("<<< POST /queries  columns=" + (response.columns != null ? response.columns.size() : 0)
                 + ", rows=" + (response.rows != null ? response.rows.size() : 0) + ", done=" + response.done);
@@ -143,9 +145,9 @@ public class HttpClient {
         try {
             var request = new Protocol.ExecuteRequest(sql);
             var response = post("/queries", request, Protocol.UpdateResponse.class, true);
-            if (response.error != null) {
-                debug("<<< POST /queries  ERROR: " + response.error);
-                throw new SQLException(response.error);
+            if (response.errorMessage() != null) {
+                debug("<<< POST /queries  ERROR: " + response.errorMessage());
+                throw new SQLException(response.errorMessage());
             }
             debug("<<< POST /queries  updateCount=" + response.updateCount + ", lastInsertId=" + response.lastInsertId);
             return response;
@@ -161,9 +163,9 @@ public class HttpClient {
         try {
             var request = new Protocol.PrepareRequest(sql);
             var response = post("/statements", request, Protocol.PrepareResponse.class, true);
-            if (response.error != null) {
-                debug("<<< POST /statements  ERROR: " + response.error);
-                throw new SQLException(response.error);
+            if (response.errorMessage() != null) {
+                debug("<<< POST /statements  ERROR: " + response.errorMessage());
+                throw new SQLException(response.errorMessage());
             }
             debug("<<< POST /statements  statementId=" + response.statementId + ", paramCount=" + response.paramCount);
             return response;
@@ -182,9 +184,9 @@ public class HttpClient {
             var request = new Protocol.StatementExecuteRequest(params, true);
             request.fetchSize = fetchSize;
             var response = post("/statements/" + statementId + "/execute", request, Protocol.QueryResponse.class, true);
-            if (response.error != null) {
-                debug("<<< POST /statements/" + statementId + "/execute  ERROR: " + response.error);
-                throw new SQLException(response.error);
+            if (response.errorMessage() != null) {
+                debug("<<< POST /statements/" + statementId + "/execute  ERROR: " + response.errorMessage());
+                throw new SQLException(response.errorMessage());
             }
             debug("<<< POST /statements/" + statementId + "/execute  columns=" + (response.columns != null ? response.columns.size() : 0)
                 + ", rows=" + (response.rows != null ? response.rows.size() : 0) + ", done=" + response.done);
@@ -202,9 +204,9 @@ public class HttpClient {
         try {
             var request = new Protocol.StatementExecuteRequest(params, false);
             var response = post("/statements/" + statementId + "/execute", request, Protocol.UpdateResponse.class, true);
-            if (response.error != null) {
-                debug("<<< POST /statements/" + statementId + "/execute  ERROR: " + response.error);
-                throw new SQLException(response.error);
+            if (response.errorMessage() != null) {
+                debug("<<< POST /statements/" + statementId + "/execute  ERROR: " + response.errorMessage());
+                throw new SQLException(response.errorMessage());
             }
             debug("<<< POST /statements/" + statementId + "/execute  updateCount=" + response.updateCount + ", lastInsertId=" + response.lastInsertId);
             return response;
@@ -231,9 +233,9 @@ public class HttpClient {
         debug(">>> GET /statements/" + statementId + "/metadata");
         try {
             var response = get("/statements/" + statementId + "/metadata", Protocol.StatementMetadataResponse.class);
-            if (response.error != null) {
-                debug("<<< GET /statements/" + statementId + "/metadata  ERROR: " + response.error);
-                throw new SQLException(response.error);
+            if (response.errorMessage() != null) {
+                debug("<<< GET /statements/" + statementId + "/metadata  ERROR: " + response.errorMessage());
+                throw new SQLException(response.errorMessage());
             }
             debug("<<< GET /statements/" + statementId + "/metadata  columns=" + (response.columns != null ? response.columns.size() : 0));
             return response;
@@ -251,9 +253,9 @@ public class HttpClient {
         try {
             var request = new Protocol.StatementBatchRequest(paramSets);
             var response = post("/statements/" + statementId + "/batch", request, Protocol.StatementBatchResponse.class, true);
-            if (response.error != null) {
-                debug("<<< POST /statements/" + statementId + "/batch  ERROR: " + response.error);
-                throw new SQLException(response.error);
+            if (response.errorMessage() != null) {
+                debug("<<< POST /statements/" + statementId + "/batch  ERROR: " + response.errorMessage());
+                throw new SQLException(response.errorMessage());
             }
             debug("<<< POST /statements/" + statementId + "/batch  updateCounts=" + response.updateCounts);
             return response;
@@ -269,9 +271,9 @@ public class HttpClient {
         try {
             var request = new Protocol.CursorFetchRequest(fetchSize);
             var response = post("/cursors/" + cursorId + "/fetch", request, Protocol.QueryResponse.class, true);
-            if (response.error != null) {
-                debug("<<< POST /cursors/" + cursorId + "/fetch  ERROR: " + response.error);
-                throw new SQLException(response.error);
+            if (response.errorMessage() != null) {
+                debug("<<< POST /cursors/" + cursorId + "/fetch  ERROR: " + response.errorMessage());
+                throw new SQLException(response.errorMessage());
             }
             debug("<<< POST /cursors/" + cursorId + "/fetch  rows=" + (response.rows != null ? response.rows.size() : 0)
                 + ", done=" + response.done + ", cursorId=" + response.cursorId);
@@ -300,9 +302,9 @@ public class HttpClient {
         try {
             var request = new Protocol.ExecuteRequest(sql, fetchSize);
             var response = post("/queries", request, Protocol.ExecuteResponse.class, true);
-            if (response.error != null) {
-                debug("<<< POST /queries  ERROR: " + response.error);
-                throw new SQLException(response.error);
+            if (response.errorMessage() != null) {
+                debug("<<< POST /queries  ERROR: " + response.errorMessage());
+                throw new SQLException(response.errorMessage());
             }
             if (response.isQuery()) {
                 debug("<<< POST /queries  [RESULT] columns=" + (response.columns != null ? response.columns.size() : 0)
@@ -317,22 +319,36 @@ public class HttpClient {
         }
     }
 
+    private static final byte[] EMPTY_OBJECT = "{}".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
+    private static InputStream maybeDecompress(HttpResponse<InputStream> response) throws IOException {
+        InputStream in = response.body();
+        String enc = response.headers().firstValue("Content-Encoding").orElse("");
+        if (enc.equalsIgnoreCase("gzip")) {
+            return new GZIPInputStream(in);
+        }
+        return in;
+    }
+
     private <T> T post(String path, Object body, Class<T> responseType, boolean includeSession)
             throws IOException, InterruptedException {
         var requestBuilder = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl + path))
                 .timeout(TIMEOUT)
-                .header("Content-Type", "application/json");
+                .header("Content-Type", "application/json")
+                .header("Accept-Encoding", "gzip");
 
         if (includeSession && sessionId != null) {
             requestBuilder.header("X-Clouderby-Session-Id", sessionId);
         }
 
-        String jsonBody = body != null ? mapper.writeValueAsString(body) : "{}";
-        requestBuilder.POST(HttpRequest.BodyPublishers.ofString(jsonBody));
+        byte[] jsonBody = body != null ? mapper.writeValueAsBytes(body) : EMPTY_OBJECT;
+        requestBuilder.POST(HttpRequest.BodyPublishers.ofByteArray(jsonBody));
 
-        var response = client.send(requestBuilder.build(), HttpResponse.BodyHandlers.ofString());
-        return mapper.readValue(response.body(), responseType);
+        var response = client.send(requestBuilder.build(), HttpResponse.BodyHandlers.ofInputStream());
+        try (var in = maybeDecompress(response)) {
+            return mapper.readValue(in, responseType);
+        }
     }
 
     private <T> T delete(String path, Class<T> responseType)
@@ -340,7 +356,8 @@ public class HttpClient {
         var requestBuilder = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl + path))
                 .timeout(TIMEOUT)
-                .header("Content-Type", "application/json");
+                .header("Content-Type", "application/json")
+                .header("Accept-Encoding", "gzip");
 
         if (sessionId != null) {
             requestBuilder.header("X-Clouderby-Session-Id", sessionId);
@@ -348,15 +365,18 @@ public class HttpClient {
 
         requestBuilder.DELETE();
 
-        var response = client.send(requestBuilder.build(), HttpResponse.BodyHandlers.ofString());
-        return mapper.readValue(response.body(), responseType);
+        var response = client.send(requestBuilder.build(), HttpResponse.BodyHandlers.ofInputStream());
+        try (var in = maybeDecompress(response)) {
+            return mapper.readValue(in, responseType);
+        }
     }
 
     private <T> T get(String path, Class<T> responseType)
             throws IOException, InterruptedException {
         var requestBuilder = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl + path))
-                .timeout(TIMEOUT);
+                .timeout(TIMEOUT)
+                .header("Accept-Encoding", "gzip");
 
         if (sessionId != null) {
             requestBuilder.header("X-Clouderby-Session-Id", sessionId);
@@ -364,8 +384,10 @@ public class HttpClient {
 
         requestBuilder.GET();
 
-        var response = client.send(requestBuilder.build(), HttpResponse.BodyHandlers.ofString());
-        return mapper.readValue(response.body(), responseType);
+        var response = client.send(requestBuilder.build(), HttpResponse.BodyHandlers.ofInputStream());
+        try (var in = maybeDecompress(response)) {
+            return mapper.readValue(in, responseType);
+        }
     }
 
     // GET /health
@@ -386,9 +408,9 @@ public class HttpClient {
         debug(">>> GET /metadata/info");
         try {
             var response = get("/metadata/info", Protocol.MetadataInfoResponse.class);
-            if (response.error != null) {
-                debug("<<< GET /metadata/info  ERROR: " + response.error);
-                throw new SQLException(response.error);
+            if (response.errorMessage() != null) {
+                debug("<<< GET /metadata/info  ERROR: " + response.errorMessage());
+                throw new SQLException(response.errorMessage());
             }
             debug("<<< GET /metadata/info  product=" + response.productName + " " + response.productVersion);
             return response;
@@ -414,9 +436,9 @@ public class HttpClient {
                 }
             }
             var response = get(path.toString(), Protocol.MetadataTablesResponse.class);
-            if (response.error != null) {
-                debug("<<< GET /metadata/tables  ERROR: " + response.error);
-                throw new SQLException(response.error);
+            if (response.errorMessage() != null) {
+                debug("<<< GET /metadata/tables  ERROR: " + response.errorMessage());
+                throw new SQLException(response.errorMessage());
             }
             debug("<<< GET /metadata/tables  count=" + (response.tables != null ? response.tables.size() : 0));
             return response;
@@ -438,9 +460,9 @@ public class HttpClient {
             if (tablePattern != null) path.append("tablePattern=").append(urlEncode(tablePattern)).append("&");
             if (columnPattern != null) path.append("columnPattern=").append(urlEncode(columnPattern)).append("&");
             var response = get(path.toString(), Protocol.MetadataColumnsResponse.class);
-            if (response.error != null) {
-                debug("<<< GET /metadata/columns  ERROR: " + response.error);
-                throw new SQLException(response.error);
+            if (response.errorMessage() != null) {
+                debug("<<< GET /metadata/columns  ERROR: " + response.errorMessage());
+                throw new SQLException(response.errorMessage());
             }
             debug("<<< GET /metadata/columns  count=" + (response.columns != null ? response.columns.size() : 0));
             return response;
@@ -460,9 +482,9 @@ public class HttpClient {
             if (schema != null) path.append("schema=").append(urlEncode(schema)).append("&");
             if (table != null) path.append("table=").append(urlEncode(table)).append("&");
             var response = get(path.toString(), Protocol.MetadataPrimaryKeysResponse.class);
-            if (response.error != null) {
-                debug("<<< GET /metadata/primary-keys  ERROR: " + response.error);
-                throw new SQLException(response.error);
+            if (response.errorMessage() != null) {
+                debug("<<< GET /metadata/primary-keys  ERROR: " + response.errorMessage());
+                throw new SQLException(response.errorMessage());
             }
             debug("<<< GET /metadata/primary-keys  count=" + (response.primaryKeys != null ? response.primaryKeys.size() : 0));
             return response;
@@ -481,9 +503,9 @@ public class HttpClient {
         debug(">>> POST /transactions/begin");
         try {
             var response = post("/transactions/begin", null, Protocol.TransactionResponse.class, true);
-            if (response.error != null) {
-                debug("<<< POST /transactions/begin  ERROR: " + response.error);
-                throw new SQLException("Failed to begin transaction: " + response.error);
+            if (response.errorMessage() != null) {
+                debug("<<< POST /transactions/begin  ERROR: " + response.errorMessage());
+                throw new SQLException("Failed to begin transaction: " + response.errorMessage());
             }
             debug("<<< POST /transactions/begin  status=" + response.status);
             return response;
@@ -498,9 +520,9 @@ public class HttpClient {
         debug(">>> POST /transactions/commit");
         try {
             var response = post("/transactions/commit", null, Protocol.TransactionResponse.class, true);
-            if (response.error != null) {
-                debug("<<< POST /transactions/commit  ERROR: " + response.error);
-                throw new SQLException("Failed to commit transaction: " + response.error);
+            if (response.errorMessage() != null) {
+                debug("<<< POST /transactions/commit  ERROR: " + response.errorMessage());
+                throw new SQLException("Failed to commit transaction: " + response.errorMessage());
             }
             debug("<<< POST /transactions/commit  status=" + response.status);
             return response;
@@ -515,9 +537,9 @@ public class HttpClient {
         debug(">>> POST /transactions/rollback");
         try {
             var response = post("/transactions/rollback", null, Protocol.TransactionResponse.class, true);
-            if (response.error != null) {
-                debug("<<< POST /transactions/rollback  ERROR: " + response.error);
-                throw new SQLException("Failed to rollback transaction: " + response.error);
+            if (response.errorMessage() != null) {
+                debug("<<< POST /transactions/rollback  ERROR: " + response.errorMessage());
+                throw new SQLException("Failed to rollback transaction: " + response.errorMessage());
             }
             debug("<<< POST /transactions/rollback  status=" + response.status);
             return response;
