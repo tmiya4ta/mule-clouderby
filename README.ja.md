@@ -62,13 +62,13 @@ clouderbyは「JDBC over HTTP」を実現するためのオープンプロトコ
 <dependency>
     <groupId>io.gitlab.myst3m</groupId>
     <artifactId>clouderby-jdbc</artifactId>
-    <version>1.3.0</version>
+    <version>1.5.0</version>
 </dependency>
 ```
 
 **Gradle:**
 ```groovy
-implementation 'io.gitlab.myst3m:clouderby-jdbc:1.3.0'
+implementation 'io.gitlab.myst3m:clouderby-jdbc:1.5.0'
 ```
 
 ### 接続URL
