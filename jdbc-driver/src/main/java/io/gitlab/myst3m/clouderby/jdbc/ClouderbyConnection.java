@@ -47,16 +47,23 @@ public class ClouderbyConnection implements Connection {
         }
     }
 
+    /**
+     * Synchronized on the cache: a concurrent double-prepare of the same SQL would
+     * overwrite the first entry, leaking the first server-side statement id.
+     * Holding the lock across the prepare call serializes prepares per connection,
+     * which is acceptable — a JDBC Connection is essentially single-threaded.
+     */
     Protocol.PrepareResponse getOrPrepareStatement(String sql) throws SQLException {
-        if (stmtCache != null) {
+        if (stmtCache == null) {
+            return httpClient.prepareStatement(sql);
+        }
+        synchronized (stmtCache) {
             Protocol.PrepareResponse cached = stmtCache.get(sql);
             if (cached != null) return cached;
-        }
-        Protocol.PrepareResponse fresh = httpClient.prepareStatement(sql);
-        if (stmtCache != null) {
+            Protocol.PrepareResponse fresh = httpClient.prepareStatement(sql);
             stmtCache.put(sql, fresh);
+            return fresh;
         }
-        return fresh;
     }
 
     public ClouderbyConnection(String host, int port, String database) throws SQLException {
@@ -166,14 +173,16 @@ public class ClouderbyConnection implements Connection {
         if (!closed) {
             // Drop all cached prepared statements so server can free them
             if (stmtCache != null) {
-                for (Protocol.PrepareResponse cached : stmtCache.values()) {
-                    try {
-                        httpClient.closeStatement(cached.statementId);
-                    } catch (SQLException ignored) {
-                        // best-effort
+                synchronized (stmtCache) {
+                    for (Protocol.PrepareResponse cached : stmtCache.values()) {
+                        try {
+                            httpClient.closeStatement(cached.statementId);
+                        } catch (SQLException ignored) {
+                            // best-effort
+                        }
                     }
+                    stmtCache.clear();
                 }
-                stmtCache.clear();
             }
             // Rollback any pending transaction before closing
             if (inTransaction) {
