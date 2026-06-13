@@ -6,7 +6,7 @@ http:
 
 # Remote clouderbyd connection (via public CloudHub URL)
 clouderby:
-  host: "db04-2m6ahj.pnwfdv.jpn-e1.cloudhub.io"
+  host: "mule-clouderby-zsl67m.pnwfdv.jpn-e1.cloudhub.io"
   port: "443"
   database: "app"
   secure: "true"

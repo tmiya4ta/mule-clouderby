@@ -32,6 +32,41 @@ output application/json
     </flow>
 
     <!-- GET /api/test - Quick connection test -->
+    <!-- GET /api/bench - Pull 1000 rows, driver default fetchSize (1000 → 1 page = 1 RTT) -->
+    <flow name="bench-flow">
+        <http:listener doc:name="GET /api/bench" config-ref="HTTP_Listener_config" path="/api/bench" allowedMethods="GET"/>
+        <db:select doc:name="Bench select default fetch" config-ref="Database_Config" fetchSize="1000">
+            <db:sql>SELECT id, name, value FROM bench_t ORDER BY id</db:sql>
+        </db:select>
+        <ee:transform doc:name="Bench Response">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{ rowCount: sizeOf(payload), first: payload[0], last: payload[-1] }]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler ref="global-error-handler"/>
+    </flow>
+
+    <!-- GET /api/bench100 - Same 1000 rows but fetchSize=100 → 10 pages = 10 cursor RTTs.
+         The delta vs /api/bench shows the driver's RTT-count sensitivity through Mule. -->
+    <flow name="bench100-flow">
+        <http:listener doc:name="GET /api/bench100" config-ref="HTTP_Listener_config" path="/api/bench100" allowedMethods="GET"/>
+        <db:select doc:name="Bench select fetch=100" config-ref="Database_Config" fetchSize="100">
+            <db:sql>SELECT id, name, value FROM bench_t ORDER BY id</db:sql>
+        </db:select>
+        <ee:transform doc:name="Bench100 Response">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{ rowCount: sizeOf(payload), first: payload[0], last: payload[-1] }]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler ref="global-error-handler"/>
+    </flow>
+
     <flow name="test-connection-flow">
         <http:listener doc:name="GET /api/test" config-ref="HTTP_Listener_config" path="/api/test" allowedMethods="GET"/>
         <logger level="INFO" message="[CLIENT] Testing connection to remote clouderby server"/>

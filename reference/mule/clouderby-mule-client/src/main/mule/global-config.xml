@@ -24,7 +24,7 @@
     <db:config name="Database_Config" doc:name="Database Config">
         <db:generic-connection
             url="jdbc:clouderby://${clouderby.host}:${clouderby.port}/${clouderby.database}?secure=${clouderby.secure}&amp;debug=${clouderby.debug}"
-            driverClassName="com.muledev.jdbc.ClouderbyDriver"
+            driverClassName="io.gitlab.myst3m.clouderby.jdbc.ClouderbyDriver"
             user="${clouderby.user}"
             password="${clouderby.password}"/>
     </db:config>
