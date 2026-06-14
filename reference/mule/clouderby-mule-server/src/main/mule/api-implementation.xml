@@ -678,4 +678,40 @@ var sqlKeywords = ["SELECT", "FROM", "WHERE", "INSERT", "INTO", "VALUES", "UPDAT
         <error-handler ref="global-error-handler"/>
     </flow>
 
+    <!-- ============================================ -->
+    <!-- ANN vector search (Lucene HNSW, in-JVM)      -->
+    <!-- Not SQL-expressible, so exposed as its own   -->
+    <!-- endpoints alongside the clouderby SQL path.  -->
+    <!-- ============================================ -->
+
+    <!-- POST /vectors/upsert  { "id": "...", "content": "..." } -->
+    <flow name="vectors-upsert-flow">
+        <http:listener doc:name="POST /vectors/upsert" config-ref="HTTP_Listener_config" path="/vectors/upsert" allowedMethods="POST"/>
+        <java:invoke-static class="com.muledev.vec.VectorIndex" method="upsert(String,String)">
+            <java:args>#[{id: payload.id as String, content: payload.content as String}]</java:args>
+        </java:invoke-static>
+        <set-payload value="#[payload]" mimeType="application/json"/>
+        <error-handler ref="global-error-handler"/>
+    </flow>
+
+    <!-- POST /vectors/search  { "q": "...", "k": 5 } -->
+    <flow name="vectors-search-flow">
+        <http:listener doc:name="POST /vectors/search" config-ref="HTTP_Listener_config" path="/vectors/search" allowedMethods="POST"/>
+        <java:invoke-static class="com.muledev.vec.VectorIndex" method="search(String,int)">
+            <java:args>#[{query: payload.q as String, k: (payload.k default 5) as Number}]</java:args>
+        </java:invoke-static>
+        <set-payload value="#[payload]" mimeType="application/json"/>
+        <error-handler ref="global-error-handler"/>
+    </flow>
+
+    <!-- POST /vectors/clear -->
+    <flow name="vectors-clear-flow">
+        <http:listener doc:name="POST /vectors/clear" config-ref="HTTP_Listener_config" path="/vectors/clear" allowedMethods="POST"/>
+        <java:invoke-static class="com.muledev.vec.VectorIndex" method="clear()">
+            <java:args>#[{}]</java:args>
+        </java:invoke-static>
+        <set-payload value="#[payload]" mimeType="application/json"/>
+        <error-handler ref="global-error-handler"/>
+    </flow>
+
 </mule>
