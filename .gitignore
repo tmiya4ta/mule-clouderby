@@ -7,3 +7,7 @@ target/
 .idea/
 *.iml
 .DS_Store
+
+# Python
+__pycache__/
+*.pyc
