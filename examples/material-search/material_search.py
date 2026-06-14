@@ -42,6 +42,8 @@ import re
 import sys
 import urllib.request
 
+import query_plan
+
 BASE = os.environ.get("CLOUDERBY_URL", "https://mule-clouderby-zsl67m.pnwfdv.jpn-e1.cloudhub.io")
 USER = os.environ.get("CLOUDERBY_USER", "mule")
 PASSWORD = os.environ.get("CLOUDERBY_PASSWORD", "mule123")
@@ -121,16 +123,6 @@ def cmd_ingest():
     print("done. %d products indexed." % len(rows))
 
 
-# Structured constraints a cheap regex can pull out — no LLM needed for these.
-def extract_constraints(query):
-    c = {}
-    m = re.search(r"(?:under|<=?|以下|まで)\s*￥?\s*(\d+)", query) \
-        or re.search(r"(\d+)\s*円\s*(?:以下|まで)", query)
-    if m:
-        c["max_price"] = float(m.group(1))
-    return c
-
-
 def stock_and_price(sid, product_id):
     rows = sql(sid,
                "SELECT p.PRODUCT_NAME AS name, p.PRODUCT_TYPE AS type, p.UNIT_PRICE AS price, "
@@ -142,28 +134,43 @@ def stock_and_price(sid, product_id):
     return rows[0] if rows else None
 
 
+def cmd_plan(query):
+    """Show only the intent-analysis output (NL -> JSON Schema plan)."""
+    plan, notes = query_plan.parse(query)
+    print("\ninput: %r" % query)
+    for n in notes:
+        print(n)
+    print(json.dumps(plan, ensure_ascii=False, indent=2))
+
+
 def cmd_search(query, k, max_price):
     sid = open_session()
-    cons = extract_constraints(query)
-    if max_price is not None:
-        cons["max_price"] = max_price
 
-    # 1) vector layer: free text -> nearest product ids (over-fetch for filtering).
-    # Enrich the query with the same JP->EN hints used at index time, so the
-    # English embedding model also handles Japanese phrasing symmetrically.
-    qhints = [en for jp, en in JP_EN.items() if jp in query]
-    enriched_q = " ".join([query] + qhints)
-    hits = vsearch(enriched_q, max(k * 3, 10))
+    # 1) intent-analysis layer: NL -> structured plan (validated against schema)
+    plan, notes = query_plan.parse(query)
+    for n in notes:
+        print(n)
+    if max_price is not None:                       # CLI flag overrides the plan
+        plan.setdefault("filters", {})["price_max"] = max_price
+    filters = plan.get("filters", {})
+    if plan.get("limit"):
+        k = plan["limit"]
+
+    print('\ninput : %r' % query)
+    print("plan  : %s" % json.dumps(plan, ensure_ascii=False))
+    print("-" * 64)
+
+    # 2) vector layer: the SEMANTIC slice of the plan -> nearest product ids.
+    # Enrich with the same JP->EN hints used at index time so the English
+    # embedding model handles Japanese phrasing symmetrically.
+    sem = plan["semantic"]
+    qhints = [en for jp, en in JP_EN.items() if jp in sem]
+    hits = vsearch(" ".join([sem] + qhints), max(k * 3, 12))
     if not hits:
         print("no matches (did you run `ingest` first?)")
         return
 
-    print('\nquery: %r' % query)
-    if cons:
-        print("constraints (regex-extracted): %s" % cons)
-    print("-" * 64)
-
-    # 2) SQL layer: operate on the resolved rows (stock, price), apply constraints
+    # 3) SQL layer: operate on resolved rows + apply the plan's FILTERS
     shown = 0
     for h in hits:
         pid = h["id"].split(":", 1)[1]
@@ -171,9 +178,15 @@ def cmd_search(query, k, max_price):
         if rec is None:
             continue
         price = rec.get("PRICE")
-        if "max_price" in cons and price is not None and price > cons["max_price"]:
-            continue
         avail = (rec.get("QTY") or 0) - (rec.get("RESERVED") or 0)
+        if "price_max" in filters and price is not None and price > filters["price_max"]:
+            continue
+        if "price_min" in filters and price is not None and price < filters["price_min"]:
+            continue
+        if filters.get("in_stock") and avail <= 0:
+            continue
+        if "product_type" in filters and (rec.get("TYPE") or "") != filters["product_type"]:
+            continue
         flag = "  ⚠ LOW STOCK" if avail <= 0 else ""
         print("%-26s  %-12s  ¥%-7s  在庫 %6.0f (引当 %.0f)%s"
               % ((rec.get("NAME") or "")[:26], rec.get("TYPE") or "", _num(price),
@@ -183,7 +196,7 @@ def cmd_search(query, k, max_price):
         if shown >= k:
             break
     if shown == 0:
-        print("(matches found, but none passed the constraints)")
+        print("(matches found, but none passed the filters)")
 
 
 def _num(x):
@@ -206,6 +219,10 @@ def main():
         cmd_ingest()
     elif cmd == "demo":
         cmd_demo()
+    elif cmd == "plan":
+        if len(args) < 2:
+            raise SystemExit('usage: plan "<text>"')
+        cmd_plan(" ".join(args[1:]))
     elif cmd == "search":
         rest = args[1:]
         k = 5

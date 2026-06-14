@@ -23,25 +23,42 @@ operation (stock, price) on whatever the vector layer resolved.
 
 ## The pattern (the whole point)
 
+A compound request is first parsed into a **structured query plan** (an
+*intent-analysis* layer, `query_plan.py`), then each part is routed to the
+engine that's good at it:
+
 ```
- free text          ──▶  [vector search]   ──▶  concrete PRODUCT_IDs    (fuzzy → entity)
- "epoxy resin"            nearest by meaning      P010, P046, P047
- "樹脂 100円以下"            │
-                           │   plus a cheap regex for structured constraints
-                           │   ("100円以下" → max_price=100)   ← no LLM needed
-                           ▼
-                    [clouderby SQL]  ──▶  stock / price / low-stock flag
-                    precise operation on the resolved rows
+ "ステンレスの薄い板で500円以下、在庫があるやつを3件"
+        │
+        ▼  intent analysis  (NL → JSON-Schema plan; see query_plan.py)
+  { "intent": "search",
+    "semantic": "ステンレスの薄い板",      ──▶ [vector search]  → concrete PRODUCT_IDs
+    "filters": { "price_max": 500,        ──▶ [clouderby SQL WHERE]
+                 "in_stock": true },
+    "limit": 3 }
+        │
+        ▼
+   ranked products with stock / price, filtered by the plan
 ```
 
-- **Vector search** = the bridge from how a human *phrases* a request to the
-  exact records. This is the part SQL cannot do.
-- **Regex** = pulls structured parameters (price caps, sizes, grades) that are
-  regular enough to not need an LLM.
-- **SQL** = operates on the resolved rows (here: join to inventory for stock).
+- **Intent analysis** = split the sentence into `semantic` (meaning) +
+  `filters` (numbers/ranges/enums) + `limit`. Don't embed the whole sentence —
+  the constraints would just be noise in the vector.
+- **Vector search** = resolve the *semantic* slice to exact records. The part
+  SQL cannot do.
+- **SQL** = operate on the resolved rows and apply the *filters*.
 
-No LLM is involved. The vector index collapses infinite phrasings into concrete
-`PRODUCT_ID`s; everything downstream is deterministic SQL.
+The plan conforms to a **JSON Schema** (`PLAN_SCHEMA`), and the example actually
+validates against it. How the plan gets *filled* is a cost ladder:
+
+| filler | when | dependency |
+|---|---|---|
+| `parse_rule` (regex/keywords) | regular structure (prices, stock, type, "N件") | none — default |
+| `parse_llm` (Claude tool use) | messy / nested / ambiguous compound phrasing | `ANTHROPIC_API_KEY` |
+
+`parse()` uses the LLM when a key is present, else the rules. Either way the LLM
+(if used) only *fills the schema* — the search, filtering, and SQL stay cheap
+and deterministic.
 
 ## Run it
 
@@ -50,14 +67,20 @@ No LLM is involved. The vector index collapses infinite phrasings into concrete
 #    the index is in-memory on the server, so re-run after a server restart)
 python3 material_search.py ingest
 
-# 2) search by meaning
-python3 material_search.py search "epoxy resin"
+# 2) see only the intent-analysis output (NL -> JSON-Schema plan; no server call)
+python3 material_search.py plan "ステンレスの薄い板で500円以下、在庫があるやつを3件"
+
+# 3) search — runs the plan: semantic -> vector, filters -> SQL
+python3 material_search.py search "epoxy resin under 100 in stock"
 python3 material_search.py search "silicon wafer"
-python3 material_search.py search "樹脂 100円以下"      # regex pulls the price cap
+python3 material_search.py search "銅線 原材料 100円以下"
 python3 material_search.py search "copper wire" --max-price 30 -k 5
 
-# 3) a canned tour
+# 4) a canned tour
 python3 material_search.py demo
+
+# (optional) use Claude to parse messy compound phrasing into the same schema
+export ANTHROPIC_API_KEY=...   # then `plan`/`search` use parse_llm automatically
 ```
 
 Point it at your own server with `CLOUDERBY_URL`, `CLOUDERBY_USER`,
