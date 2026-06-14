@@ -10,15 +10,19 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Real semantic sentence embedder: all-MiniLM-L6-v2 (quantized ONNX) run in-JVM
- * via ONNX Runtime, with a pure-Java WordPiece tokenizer. Produces 384-dim
- * L2-normalized sentence vectors via attention-masked mean pooling — the same
- * recipe sentence-transformers uses.
+ * Real semantic sentence embedder: multilingual-e5-small (quantized ONNX) run
+ * in-JVM via ONNX Runtime, with a pure-Java SentencePiece Unigram tokenizer.
+ * Produces 384-dim L2-normalized sentence vectors via attention-masked mean
+ * pooling — the recipe sentence-transformers / e5 use. Multilingual, so Japanese
+ * works (unlike the English-only all-MiniLM it replaces).
  *
- * Model (~23 MB) and vocab are bundled under /model in the app jar, so the whole
+ * Model (~118 MB) and vocab are bundled under /model in the app jar, so the whole
  * embedder ships inside the Mule artifact. ONNX Runtime carries one native lib;
  * all access pins the thread context classloader to this class's loader so it
  * resolves under Mule's isolated app classloader.
+ *
+ * e5 expects an instruction prefix ("query: " / "passage: ") on the input — the
+ * caller (VectorIndex) adds it.
  */
 public final class OnnxEmbedder {
 
@@ -29,16 +33,16 @@ public final class OnnxEmbedder {
 
     private final OrtEnvironment env;
     private final OrtSession session;
-    private final WordPiece tokenizer;
+    private final SentencePieceUnigram tokenizer;
     private final boolean needsTokenTypeIds;
 
     private OnnxEmbedder() throws Exception {
-        try (InputStream model = res("/model/minilm.onnx");
-             InputStream vocab = res("/model/vocab.txt")) {
+        try (InputStream model = res("/model/e5-small.onnx");
+             InputStream vocab = res("/model/e5_vocab.tsv")) {
             byte[] modelBytes = model.readAllBytes();
             this.env = OrtEnvironment.getEnvironment();
             this.session = env.createSession(modelBytes, new OrtSession.SessionOptions());
-            this.tokenizer = new WordPiece(vocab, MAX_LEN);
+            this.tokenizer = new SentencePieceUnigram(vocab, MAX_LEN);
             this.needsTokenTypeIds = session.getInputNames().contains("token_type_ids");
         }
     }

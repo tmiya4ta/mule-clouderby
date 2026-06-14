@@ -11,3 +11,6 @@ target/
 # Python
 __pycache__/
 *.pyc
+
+# e5 model (>100MB; fetch with download-model.sh)
+reference/mule/clouderby-mule-server/src/main/resources/model/e5-small.onnx

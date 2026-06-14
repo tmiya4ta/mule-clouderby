@@ -59,7 +59,7 @@ public final class VectorIndex {
         Thread.currentThread().setContextClassLoader(VectorIndex.class.getClassLoader());
         try {
             IndexWriter w = writer();
-            float[] vec = OnnxEmbedder.embed(content);
+            float[] vec = OnnxEmbedder.embed("passage: " + content);   // e5 doc prefix
             Document doc = new Document();
             doc.add(new StringField(F_ID, id, Field.Store.YES));
             doc.add(new StoredField(F_CONTENT, content));
@@ -79,7 +79,7 @@ public final class VectorIndex {
         Thread.currentThread().setContextClassLoader(VectorIndex.class.getClassLoader());
         try {
             IndexWriter w = writer();
-            float[] qv = OnnxEmbedder.embed(query);
+            float[] qv = OnnxEmbedder.embed("query: " + query);        // e5 query prefix
             try (DirectoryReader reader = DirectoryReader.open(w)) {
                 IndexSearcher searcher = new IndexSearcher(reader);
                 KnnFloatVectorQuery q = new KnnFloatVectorQuery(F_VECTOR, qv, k);
