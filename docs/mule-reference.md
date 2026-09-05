@@ -97,8 +97,21 @@ JDBCクライアントは再接続してください。レスポンスの `sessi
 起動時に投入するプロファイルは、次の優先順で決まります。
 
 1. すでにDBに適用済みのプロファイル (UI/APIでの選択が再起動後も残る)
-2. `db.init.profile` (設定ファイル、またはシステムプロパティ)
+2. `db.init.profile` — 設定ファイル、またはデプロイ時のアプリケーションプロパティ
+   (`yc deploy ... +db.init.profile=finance`)。後者が設定ファイルより優先されます
 3. `/init/profiles.json` の `defaultProfile`
+
+どれが効いたかは `GET /api/profiles` の `startup` で確認できます。
+
+```json
+{ "startup": { "profile": "finance",
+               "source": "config file (db.init.profile, via the Spring property)" } }
+```
+
+> **注意:** CloudHub 2.0 の `/tmp` は再起動で消えます。UI/API での切り替えは
+> DBの `CLOUDERBY_PROFILE` 表に記録されますが、その表ごと消えるため、
+> レプリカが再起動すると上記の 2. または 3. で決まるプロファイルに戻ります。
+> 恒久的に既定を変えるなら設定ファイルかデプロイ時プロパティで指定してください。
 
 新しいプロファイルを足すには、`profiles/<id>/` を作って `profiles.json` の
 `profiles` 配列にidを追加します。`finance` のデータは
@@ -131,7 +144,7 @@ JDBCクライアントは再接続してください。レスポンスの `sessi
 | `/` | GET | 管理UI (`src/main/resources/static/index.html`) |
 | `/api/db/tables` | GET | テーブル一覧 (UI用) |
 | `/api/completions` | GET | SQL補完候補 (UI用) |
-| `/api/profiles` | GET | プロファイルのカタログと現在の状態 |
+| `/api/profiles` | GET | プロファイルのカタログ、現在の状態、起動時の解決経路 (`startup`) |
 | `/api/profiles/apply` | POST | プロファイルの適用 |
 
 ### 動作確認
