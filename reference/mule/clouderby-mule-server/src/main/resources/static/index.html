@@ -920,6 +920,64 @@
             border-bottom-color: var(--accent);
         }
 
+        /* ---- ER diagram ---- */
+        .er-wrap { display: flex; flex-direction: column; height: 100%; }
+        .er-toolbar {
+            display: flex; align-items: center; gap: 1rem;
+            padding: 0.6rem 1rem; border-bottom: 1px solid var(--border);
+            background: var(--bg-secondary); flex-wrap: wrap;
+        }
+        .er-title {
+            font-family: var(--font-display); font-size: 0.9rem; color: var(--text-primary);
+            white-space: nowrap;
+        }
+        .er-legend { display: flex; flex-wrap: wrap; gap: 0.4rem; flex: 1; min-width: 0; }
+        .er-legend-item {
+            display: inline-flex; align-items: center; gap: 0.3rem;
+            padding: 0.1rem 0.45rem; border-radius: 0.3rem; cursor: pointer;
+            border: 1px solid var(--border); background: var(--bg-tertiary);
+            font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-secondary);
+            user-select: none;
+        }
+        .er-legend-item.off { opacity: 0.35; }
+        .er-legend-swatch { width: 0.6rem; height: 0.6rem; border-radius: 0.15rem; }
+        .er-tools { display: flex; align-items: center; gap: 0.4rem; margin-left: auto; }
+        .er-toggle {
+            display: inline-flex; align-items: center; gap: 0.3rem;
+            font-size: 0.72rem; color: var(--text-secondary); cursor: pointer; user-select: none;
+        }
+        .er-zoom {
+            font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-muted);
+            min-width: 3rem; text-align: center;
+        }
+        .er-canvas {
+            flex: 1; overflow: hidden; position: relative;
+            background:
+                radial-gradient(circle at 1px 1px, var(--border) 1px, transparent 0) 0 0 / 24px 24px,
+                var(--bg-primary);
+            cursor: grab;
+        }
+        .er-canvas.dragging { cursor: grabbing; }
+        .er-canvas svg { display: block; }
+        .er-hint {
+            padding: 0.35rem 1rem; border-top: 1px solid var(--border);
+            font-size: 0.68rem; color: var(--text-muted); background: var(--bg-secondary);
+        }
+        .er-node { cursor: pointer; }
+        .er-node .er-card { transition: opacity 0.12s; }
+        .er-dim { opacity: 0.12; }
+        .er-edge { fill: none; stroke: var(--border-bright); stroke-width: 1.2; transition: opacity 0.12s; }
+        .er-edge.cross { stroke-dasharray: 4 3; }
+        .er-edge.hot { stroke: var(--accent); stroke-width: 2; }
+        .er-tablename { font-family: var(--font-display); font-size: 11px; fill: var(--text-primary); }
+        .er-col { font-family: var(--font-mono); font-size: 9.5px; fill: var(--text-secondary); }
+        .er-col.pk { fill: var(--accent); }
+        .er-col.fk { fill: var(--warning); }
+        .er-domain-label {
+            font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
         .sub-panel {
             display: none;
             flex: 1;
@@ -1604,6 +1662,7 @@
                         <div class="sub-tabs">
                             <button class="sub-tab active" data-subtab="console">Console</button>
                             <button class="sub-tab" data-subtab="ddl">DDL</button>
+                            <button class="sub-tab" data-subtab="er">ER</button>
                         </div>
 
                         <!-- Console Sub-panel -->
@@ -1669,6 +1728,33 @@
                                     </div>
                                 </div>
                                 <pre id="ddlContent" style="display: none;"></pre>
+                            </div>
+                        </div>
+
+                        <!-- ER diagram -->
+                        <div class="sub-panel" id="subtab-er">
+                            <div class="er-wrap">
+                                <div class="er-toolbar">
+                                    <span class="er-title" id="erTitle">ER</span>
+                                    <div class="er-legend" id="erLegend"></div>
+                                    <div class="er-tools">
+                                        <label class="er-toggle">
+                                            <input type="checkbox" id="erAllCols"> 全カラム
+                                        </label>
+                                        <button class="action-btn" id="erFit" title="全体表示">⤢ Fit</button>
+                                        <button class="action-btn" id="erZoomOut">−</button>
+                                        <span class="er-zoom" id="erZoomLabel">100%</span>
+                                        <button class="action-btn" id="erZoomIn">+</button>
+                                        <button class="action-btn" id="erExport" title="SVG をダウンロード">⤓ SVG</button>
+                                    </div>
+                                </div>
+                                <div class="er-canvas" id="erCanvas">
+                                    <div class="results-empty" id="erEmpty">
+                                        <div class="results-empty-icon">◱</div>
+                                        <div>ER 図を読み込み中...</div>
+                                    </div>
+                                </div>
+                                <div class="er-hint">ドラッグで移動 / ホイールで拡大縮小 / テーブルをクリックで関連だけ表示</div>
                             </div>
                         </div>
                     </div>
@@ -2124,7 +2210,7 @@ INSERT INTO example VALUES (1);"></textarea>
             completionData.columns = [];
             if (completionData.tables.length === 0) return;
             try {
-                const result = await executeSQL(`SELECT T.TABLENAME, C.COLUMNNAME FROM SYS.SYSCOLUMNS C JOIN SYS.SYSTABLES T ON C.REFERENCEID = T.TABLEID JOIN SYS.SYSSCHEMAS S ON T.SCHEMAID = S.SCHEMAID WHERE S.SCHEMANAME = CURRENT SCHEMA AND T.TABLETYPE = 'T' ORDER BY T.TABLENAME, C.COLUMNNUMBER`);
+                const result = await executeSQLAll(`SELECT T.TABLENAME, C.COLUMNNAME FROM SYS.SYSCOLUMNS C JOIN SYS.SYSTABLES T ON C.REFERENCEID = T.TABLEID JOIN SYS.SYSSCHEMAS S ON T.SCHEMAID = S.SCHEMAID WHERE S.SCHEMANAME = CURRENT SCHEMA AND T.TABLETYPE = 'T' ORDER BY T.TABLENAME, C.COLUMNNUMBER`);
                 if (result.rows) {
                     const colSet = new Set();
                     result.rows.forEach(row => {
@@ -2258,6 +2344,458 @@ INSERT INTO example VALUES (1);"></textarea>
         }
 
         // ============================================
+        // ER diagram
+        // ============================================
+
+        const ER = {
+            model: null,        // {tables, edges, domains}
+            view: { x: 0, y: 0, k: 1 },
+            focus: null,        // pinned table name
+            hidden: new Set(),  // domains toggled off
+            allCols: false,
+            size: { w: 0, h: 0 }
+        };
+
+        const ER_CARD_W = 208;
+        const ER_HEAD_H = 22;
+        const ER_ROW_H = 14;
+        const ER_PAD = 8;
+        const ER_GAP_X = 46;
+        const ER_GAP_Y = 40;
+        const ER_MAX_PER_ROW = 4;  // ドメイン内の1行あたり最大テーブル数
+        const ER_ASPECT = 1.9;     // 画面に合わせた目標アスペクト比 (横:縦)
+        const ER_BOX_GAP = 80;
+        const ER_MARGIN = 40;      // ドメイン枠とラベルが外にはみ出す分の余白
+
+        // ドメイン接頭辞ごとの色。profile.json の domains 順に割り当てる
+        const ER_PALETTE = ['#7dd3fc', '#f0abfc', '#86efac', '#fcd34d',
+                            '#fca5a5', '#a5b4fc', '#5eead4', '#fdba74'];
+
+        function erDomainOf(table) {
+            const i = table.indexOf('_');
+            return i > 0 ? table.slice(0, i) : '—';
+        }
+
+        /** Derby の DESCRIPTOR "BTREE (2,3)" から列番号を取り出す */
+        function erParseDescriptor(desc) {
+            const m = String(desc || '').match(/\(([\d,\s]+)\)/);
+            if (!m) return [];
+            return m[1].split(',').map(x => parseInt(x.trim(), 10)).filter(n => !isNaN(n));
+        }
+
+        async function loadEr() {
+            const canvas = document.getElementById('erCanvas');
+            try {
+                const FK_SQL =
+                    "SELECT ft.TABLENAME AS FK_TABLE, CAST(fcg.DESCRIPTOR AS VARCHAR(200)) AS FK_DESC, " +
+                    "pt.TABLENAME AS PK_TABLE, CAST(pcg.DESCRIPTOR AS VARCHAR(200)) AS PK_DESC " +
+                    "FROM SYS.SYSFOREIGNKEYS fk " +
+                    "JOIN SYS.SYSCONSTRAINTS fc ON fk.CONSTRAINTID = fc.CONSTRAINTID " +
+                    "JOIN SYS.SYSTABLES ft ON fc.TABLEID = ft.TABLEID " +
+                    "JOIN SYS.SYSCONSTRAINTS pc ON fk.KEYCONSTRAINTID = pc.CONSTRAINTID " +
+                    "JOIN SYS.SYSTABLES pt ON pc.TABLEID = pt.TABLEID " +
+                    "JOIN SYS.SYSCONGLOMERATES fcg ON fk.CONGLOMERATEID = fcg.CONGLOMERATEID " +
+                    "JOIN SYS.SYSKEYS k ON fk.KEYCONSTRAINTID = k.CONSTRAINTID " +
+                    "JOIN SYS.SYSCONGLOMERATES pcg ON k.CONGLOMERATEID = pcg.CONGLOMERATEID " +
+                    "JOIN SYS.SYSSCHEMAS s ON ft.SCHEMAID = s.SCHEMAID " +
+                    "WHERE s.SCHEMANAME = CURRENT SCHEMA";
+                const PK_SQL =
+                    "SELECT t.TABLENAME, CAST(cg.DESCRIPTOR AS VARCHAR(200)) AS PK_DESC " +
+                    "FROM SYS.SYSCONSTRAINTS c " +
+                    "JOIN SYS.SYSKEYS k ON c.CONSTRAINTID = k.CONSTRAINTID " +
+                    "JOIN SYS.SYSCONGLOMERATES cg ON k.CONGLOMERATEID = cg.CONGLOMERATEID " +
+                    "JOIN SYS.SYSTABLES t ON c.TABLEID = t.TABLEID " +
+                    "JOIN SYS.SYSSCHEMAS s ON t.SCHEMAID = s.SCHEMAID " +
+                    "WHERE c.TYPE = 'P' AND s.SCHEMANAME = CURRENT SCHEMA";
+                const COL_SQL =
+                    "SELECT T.TABLENAME, C.COLUMNNAME, C.COLUMNNUMBER, " +
+                    "CAST(C.COLUMNDATATYPE AS VARCHAR(64)) AS TYPE " +
+                    "FROM SYS.SYSCOLUMNS C JOIN SYS.SYSTABLES T ON C.REFERENCEID = T.TABLEID " +
+                    "JOIN SYS.SYSSCHEMAS S ON T.SCHEMAID = S.SCHEMAID " +
+                    "WHERE S.SCHEMANAME = CURRENT SCHEMA AND T.TABLETYPE = 'T' " +
+                    "ORDER BY T.TABLENAME, C.COLUMNNUMBER";
+
+                const [cols, pks, fks] = await Promise.all([
+                    executeSQLAll(COL_SQL), executeSQLAll(PK_SQL), executeSQLAll(FK_SQL)
+                ]);
+                if (!cols.rows) throw new Error('no columns');
+
+                const tables = new Map();
+                cols.rows.forEach(r => {
+                    const [tn, cn, num, type] = r;
+                    if (!tables.has(tn)) tables.set(tn, { name: tn, cols: [], pk: new Set(), fk: new Set() });
+                    tables.get(tn).cols[num - 1] = { name: cn, type: String(type || '').replace(/ NOT NULL$/, '') };
+                });
+                tables.forEach(t => { t.cols = t.cols.filter(Boolean); });
+
+                (pks.rows || []).forEach(([tn, desc]) => {
+                    const t = tables.get(tn); if (!t) return;
+                    erParseDescriptor(desc).forEach(n => { if (t.cols[n - 1]) t.pk.add(t.cols[n - 1].name); });
+                });
+
+                const edges = [];
+                (fks.rows || []).forEach(([ftn, fdesc, ptn, pdesc]) => {
+                    const ft = tables.get(ftn), pt = tables.get(ptn);
+                    if (!ft || !pt) return;
+                    const fcols = erParseDescriptor(fdesc).map(n => ft.cols[n - 1] && ft.cols[n - 1].name).filter(Boolean);
+                    const pcols = erParseDescriptor(pdesc).map(n => pt.cols[n - 1] && pt.cols[n - 1].name).filter(Boolean);
+                    fcols.forEach(c => ft.fk.add(c));
+                    edges.push({ from: ftn, to: ptn, fromCols: fcols, toCols: pcols });
+                });
+
+                ER.model = { tables, edges };
+                erLayout();
+                erRenderLegend();
+                erRender();
+                erFit();
+            } catch (e) {
+                canvas.innerHTML = '<div class="results-empty"><div class="results-empty-icon">⚠</div>' +
+                                   '<div>ER 図を作成できませんでした</div></div>';
+            }
+        }
+
+        /**
+         * ドメイン (テーブル名の接頭辞) ごとにまとめ、ドメイン内は FK の深さで
+         * 段組みする決定的なレイアウト。力学モデルより予測可能で重なりが出ない。
+         */
+        function erLayout() {
+            const { tables, edges } = ER.model;
+            const names = [...tables.keys()].sort();
+
+            const byDomain = new Map();
+            names.forEach(n => {
+                const d = erDomainOf(n);
+                if (!byDomain.has(d)) byDomain.set(d, []);
+                byDomain.get(d).push(n);
+            });
+
+            // ドメイン内 FK の深さ (参照される側が上)
+            const refs = new Map(names.map(n => [n, []]));
+            edges.forEach(e => { if (refs.has(e.from)) refs.get(e.from).push(e.to); });
+            const depth = new Map();
+            function depthOf(n, seen) {
+                if (depth.has(n)) return depth.get(n);
+                if (seen.has(n)) return 0;                 // 循環は 0 扱い
+                seen.add(n);
+                const d = erDomainOf(n);
+                let m = 0;
+                refs.get(n).forEach(t => {
+                    if (t !== n && erDomainOf(t) === d) m = Math.max(m, depthOf(t, seen) + 1);
+                });
+                seen.delete(n);
+                depth.set(n, m);
+                return m;
+            }
+            names.forEach(n => depthOf(n, new Set()));
+
+            const cardH = (t) => ER_HEAD_H + ER_PAD + erVisibleCols(t).length * ER_ROW_H
+                               + (erHiddenColCount(t) > 0 ? ER_ROW_H : 0) + ER_PAD;
+
+            // ドメインごとの箱を組む
+            const boxes = [];
+            [...byDomain.keys()].sort().forEach(d => {
+                const members = byDomain.get(d).slice().sort((a, b) =>
+                    (depth.get(a) - depth.get(b)) || a.localeCompare(b));
+                const rows = [];
+                let cur = [], curDepth = depth.get(members[0]);
+                members.forEach(n => {
+                    if (depth.get(n) !== curDepth || cur.length >= ER_MAX_PER_ROW) {
+                        if (cur.length) rows.push(cur);
+                        cur = []; curDepth = depth.get(n);
+                    }
+                    cur.push(n);
+                });
+                if (cur.length) rows.push(cur);
+
+                const w = Math.max(...rows.map(r => r.length)) * (ER_CARD_W + ER_GAP_X) - ER_GAP_X;
+                let h = 0;
+                rows.forEach(r => { h += Math.max(...r.map(n => cardH(tables.get(n)))) + ER_GAP_Y; });
+                boxes.push({ domain: d, rows, w, h: h - ER_GAP_Y + 34 });
+            });
+
+            // 箱を横長に詰める。折り返し幅は総面積から目標アスペクト比で決めるので、
+            // テーブル数やカラム表示の切り替えで縦横比が崩れない。
+            const area = boxes.reduce((a, b) => a + (b.w + ER_BOX_GAP) * (b.h + 70), 0);
+            const widest = Math.max(...boxes.map(b => b.w));
+            const band = Math.max(widest, Math.sqrt(area * ER_ASPECT));
+
+            // 高い箱から置くと帯の隙間が減る
+            const order = boxes.slice().sort((a, b) => b.h - a.h);
+            let bx = 0, by = 0, bandH = 0;
+            order.forEach(b => {
+                if (bx > 0 && bx + b.w > band) { bx = 0; by += bandH + 70; bandH = 0; }
+                b.x = bx + ER_MARGIN; b.y = by + ER_MARGIN;
+                bx += b.w + ER_BOX_GAP;
+                bandH = Math.max(bandH, b.h);
+            });
+
+            // 箱の中にカードを置く
+            let maxX = 0, maxY = 0;
+            boxes.forEach(b => {
+                let y = b.y + 30;
+                b.rows.forEach(row => {
+                    const rowH = Math.max(...row.map(n => cardH(tables.get(n))));
+                    const rowW = row.length * (ER_CARD_W + ER_GAP_X) - ER_GAP_X;
+                    let x = b.x + (b.w - rowW) / 2;
+                    row.forEach(n => {
+                        const t = tables.get(n);
+                        t.x = x; t.y = y; t.w = ER_CARD_W; t.h = cardH(t);
+                        maxX = Math.max(maxX, x + t.w); maxY = Math.max(maxY, y + t.h);
+                        x += ER_CARD_W + ER_GAP_X;
+                    });
+                    y += rowH + ER_GAP_Y;
+                });
+                maxX = Math.max(maxX, b.x + b.w); maxY = Math.max(maxY, b.y + b.h);
+            });
+
+            ER.boxes = boxes;
+            ER.size = { w: maxX + ER_MARGIN, h: maxY + ER_MARGIN };
+            ER.domainColor = new Map();
+            [...byDomain.keys()].sort().forEach((d, i) => ER.domainColor.set(d, ER_PALETTE[i % ER_PALETTE.length]));
+        }
+
+        /** 折りたたんで隠れている列数 */
+        function erHiddenColCount(t) {
+            return ER.allCols ? 0 : t.cols.length - erVisibleCols(t).length;
+        }
+
+        function erVisibleCols(t) {
+            if (ER.allCols) return t.cols;
+            const keys = t.cols.filter(c => t.pk.has(c.name) || t.fk.has(c.name));
+            return keys.length ? keys : t.cols.slice(0, 3);
+        }
+
+        function erRenderLegend() {
+            const el = document.getElementById('erLegend');
+            el.innerHTML = [...ER.domainColor.keys()].map(d => {
+                const off = ER.hidden.has(d) ? ' off' : '';
+                const n = [...ER.model.tables.keys()].filter(t => erDomainOf(t) === d).length;
+                return `<span class="er-legend-item${off}" data-er-domain="${escapeHtml(d)}">
+                    <span class="er-legend-swatch" style="background:${ER.domainColor.get(d)}"></span>
+                    ${escapeHtml(d)} <span style="color:var(--text-muted)">${n}</span></span>`;
+            }).join('');
+            el.querySelectorAll('[data-er-domain]').forEach(item => {
+                item.addEventListener('click', () => {
+                    const d = item.dataset.erDomain;
+                    if (ER.hidden.has(d)) ER.hidden.delete(d); else ER.hidden.add(d);
+                    erRenderLegend(); erRender();
+                });
+            });
+        }
+
+        function erRender() {
+            const { tables, edges } = ER.model;
+            const visible = (n) => !ER.hidden.has(erDomainOf(n));
+
+            // フォーカス時は隣接テーブルだけ濃く
+            let hot = null;
+            if (ER.focus && tables.has(ER.focus)) {
+                hot = new Set([ER.focus]);
+                edges.forEach(e => {
+                    if (e.from === ER.focus) hot.add(e.to);
+                    if (e.to === ER.focus) hot.add(e.from);
+                });
+            }
+
+            const parts = [];
+            parts.push(`<svg id="erSvg" width="${ER.size.w}" height="${ER.size.h}" viewBox="0 0 ${ER.size.w} ${ER.size.h}" xmlns="http://www.w3.org/2000/svg">`);
+            parts.push(`<defs><style>text{dominant-baseline:middle}</style>
+                <marker id="erArrow" viewBox="0 0 10 10" refX="9" refY="5"
+                    markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                    <path d="M 0 2 L 0 8" stroke="var(--border-bright)" stroke-width="1.6" fill="none"/>
+                </marker></defs>`);
+
+            // ドメインの枠
+            ER.boxes.forEach(b => {
+                if (ER.hidden.has(b.domain)) return;
+                const c = ER.domainColor.get(b.domain);
+                parts.push(`<rect x="${b.x - 18}" y="${b.y - 8}" width="${b.w + 36}" height="${b.h + 16}"
+                    rx="14" fill="${c}" fill-opacity="0.05" stroke="${c}" stroke-opacity="0.35" stroke-width="1"/>`);
+                parts.push(`<text class="er-domain-label" x="${b.x - 8}" y="${b.y + 8}" fill="${c}">${escapeHtml(b.domain)}</text>`);
+            });
+
+            // FK の線 (カードの下に敷く)
+            edges.forEach((e, i) => {
+                const a = tables.get(e.from), b = tables.get(e.to);
+                if (!a || !b || !visible(e.from) || !visible(e.to)) return;
+                const cross = erDomainOf(e.from) !== erDomainOf(e.to);
+                const isHot = hot && (hot.has(e.from) && hot.has(e.to) &&
+                                     (e.from === ER.focus || e.to === ER.focus));
+                const dim = hot && !isHot;
+                const p = erEdgePath(a, b);
+                parts.push(`<path class="er-edge${cross ? ' cross' : ''}${isHot ? ' hot' : ''}${dim ? ' er-dim' : ''}"
+                    d="${p.d}" marker-end="url(#erArrow)"/>`);
+                // 多側 (FK 側) にカラスの足
+                parts.push(erCrowsFoot(p.sx, p.sy, p.sdir, isHot));
+            });
+
+            // テーブルカード
+            [...tables.values()].forEach(t => {
+                if (!visible(t.name)) return;
+                const c = ER.domainColor.get(erDomainOf(t.name));
+                const dim = hot && !hot.has(t.name);
+                const cols = erVisibleCols(t);
+                const g = [`<g class="er-node${dim ? ' er-dim' : ''}" data-er-table="${escapeHtml(t.name)}">`];
+                g.push(`<rect class="er-card" x="${t.x}" y="${t.y}" width="${t.w}" height="${t.h}" rx="7"
+                    fill="var(--bg-secondary)" stroke="${c}" stroke-opacity="${t.name === ER.focus ? 1 : 0.55}"
+                    stroke-width="${t.name === ER.focus ? 2 : 1}"/>`);
+                g.push(`<path d="M ${t.x} ${t.y + ER_HEAD_H} h ${t.w}" stroke="${c}" stroke-opacity="0.4" fill="none"/>`);
+                g.push(`<rect x="${t.x}" y="${t.y}" width="${t.w}" height="${ER_HEAD_H}" rx="7"
+                    fill="${c}" fill-opacity="0.12"/>`);
+                g.push(`<text class="er-tablename" x="${t.x + 9}" y="${t.y + ER_HEAD_H / 2 + 1}">${escapeHtml(t.name)}</text>`);
+                cols.forEach((col, i) => {
+                    const y = t.y + ER_HEAD_H + ER_PAD + i * ER_ROW_H + ER_ROW_H / 2;
+                    const isPk = t.pk.has(col.name), isFk = t.fk.has(col.name);
+                    const mark = isPk ? '◆' : (isFk ? '◇' : '·');
+                    const cls = isPk ? 'pk' : (isFk ? 'fk' : '');
+                    g.push(`<text class="er-col ${cls}" x="${t.x + 9}" y="${y}">${mark} ${escapeHtml(col.name)}</text>`);
+                });
+                const hiddenCols = erHiddenColCount(t);
+                if (hiddenCols > 0) {
+                    const y = t.y + ER_HEAD_H + ER_PAD + cols.length * ER_ROW_H + ER_ROW_H / 2;
+                    g.push(`<text class="er-col" x="${t.x + 9}" y="${y}" fill="var(--text-muted)">…他 ${hiddenCols} 列</text>`);
+                }
+                g.push('</g>');
+                parts.push(g.join(''));
+            });
+
+            parts.push('</svg>');
+            const canvas = document.getElementById('erCanvas');
+            canvas.innerHTML = `<div id="erPan" style="transform-origin:0 0">${parts.join('')}</div>`;
+            erApplyView();
+
+            canvas.querySelectorAll('[data-er-table]').forEach(nd => {
+                nd.addEventListener('click', (ev) => {
+                    ev.stopPropagation();
+                    const name = nd.dataset.erTable;
+                    ER.focus = (ER.focus === name) ? null : name;
+                    erRender();
+                });
+            });
+        }
+
+        /** カードの縁どうしを結ぶベジエ。近い辺同士を選ぶ */
+        function erEdgePath(a, b) {
+            const ac = { x: a.x + a.w / 2, y: a.y + a.h / 2 };
+            const bc = { x: b.x + b.w / 2, y: b.y + b.h / 2 };
+            const dx = bc.x - ac.x, dy = bc.y - ac.y;
+            let sx, sy, ex, ey, sdir, c1, c2;
+            if (Math.abs(dx) > Math.abs(dy)) {
+                sdir = dx > 0 ? 'r' : 'l';
+                sx = dx > 0 ? a.x + a.w : a.x; sy = ac.y;
+                ex = dx > 0 ? b.x : b.x + b.w; ey = bc.y;
+                const m = Math.max(30, Math.abs(ex - sx) / 2);
+                c1 = `${sx + (dx > 0 ? m : -m)},${sy}`;
+                c2 = `${ex + (dx > 0 ? -m : m)},${ey}`;
+            } else {
+                sdir = dy > 0 ? 'd' : 'u';
+                sx = ac.x; sy = dy > 0 ? a.y + a.h : a.y;
+                ex = bc.x; ey = dy > 0 ? b.y : b.y + b.h;
+                const m = Math.max(24, Math.abs(ey - sy) / 2);
+                c1 = `${sx},${sy + (dy > 0 ? m : -m)}`;
+                c2 = `${ex},${ey + (dy > 0 ? -m : m)}`;
+            }
+            return { d: `M ${sx},${sy} C ${c1} ${c2} ${ex},${ey}`, sx, sy, sdir };
+        }
+
+        /** 多側の記号 (crow's foot) */
+        function erCrowsFoot(x, y, dir, hot) {
+            const L = 7, S = 5;
+            const stroke = hot ? 'var(--accent)' : 'var(--border-bright)';
+            let d;
+            if (dir === 'r')      d = `M ${x + L},${y - S} L ${x},${y} L ${x + L},${y + S}`;
+            else if (dir === 'l') d = `M ${x - L},${y - S} L ${x},${y} L ${x - L},${y + S}`;
+            else if (dir === 'd') d = `M ${x - S},${y + L} L ${x},${y} L ${x + S},${y + L}`;
+            else                  d = `M ${x - S},${y - L} L ${x},${y} L ${x + S},${y - L}`;
+            return `<path d="${d}" fill="none" stroke="${stroke}" stroke-width="${hot ? 2 : 1.2}"/>`;
+        }
+
+        function erApplyView() {
+            const pan = document.getElementById('erPan');
+            if (!pan) return;
+            pan.style.transform = `translate(${ER.view.x}px, ${ER.view.y}px) scale(${ER.view.k})`;
+            document.getElementById('erZoomLabel').textContent = Math.round(ER.view.k * 100) + '%';
+        }
+
+        function erFit() {
+            const canvas = document.getElementById('erCanvas');
+            if (!ER.size.w) return;
+            const k = Math.min(canvas.clientWidth / ER.size.w, canvas.clientHeight / ER.size.h, 1.4) * 0.94;
+            ER.view.k = k;
+            ER.view.x = (canvas.clientWidth - ER.size.w * k) / 2;
+            ER.view.y = (canvas.clientHeight - ER.size.h * k) / 2;
+            erApplyView();
+        }
+
+        function erZoom(factor, cx, cy) {
+            const canvas = document.getElementById('erCanvas');
+            const rect = canvas.getBoundingClientRect();
+            const px = (cx === undefined ? rect.width / 2 : cx - rect.left);
+            const py = (cy === undefined ? rect.height / 2 : cy - rect.top);
+            const k2 = Math.min(3, Math.max(0.1, ER.view.k * factor));
+            ER.view.x = px - (px - ER.view.x) * (k2 / ER.view.k);
+            ER.view.y = py - (py - ER.view.y) * (k2 / ER.view.k);
+            ER.view.k = k2;
+            erApplyView();
+        }
+
+        function erSetupInteractions() {
+            const canvas = document.getElementById('erCanvas');
+            let dragging = false, lx = 0, ly = 0, moved = false;
+            canvas.addEventListener('mousedown', e => {
+                dragging = true; moved = false; lx = e.clientX; ly = e.clientY;
+                canvas.classList.add('dragging');
+            });
+            window.addEventListener('mousemove', e => {
+                if (!dragging) return;
+                const dx = e.clientX - lx, dy = e.clientY - ly;
+                if (Math.abs(dx) + Math.abs(dy) > 3) moved = true;
+                ER.view.x += dx; ER.view.y += dy; lx = e.clientX; ly = e.clientY;
+                erApplyView();
+            });
+            window.addEventListener('mouseup', () => { dragging = false; canvas.classList.remove('dragging'); });
+            canvas.addEventListener('click', () => { if (!moved && ER.focus) { ER.focus = null; erRender(); } });
+            canvas.addEventListener('wheel', e => {
+                e.preventDefault();
+                erZoom(e.deltaY < 0 ? 1.12 : 1 / 1.12, e.clientX, e.clientY);
+            }, { passive: false });
+
+            document.getElementById('erFit').addEventListener('click', erFit);
+            document.getElementById('erZoomIn').addEventListener('click', () => erZoom(1.2));
+            document.getElementById('erZoomOut').addEventListener('click', () => erZoom(1 / 1.2));
+            document.getElementById('erAllCols').addEventListener('change', e => {
+                ER.allCols = e.target.checked;
+                if (ER.model) { erLayout(); erRender(); erFit(); }
+            });
+            document.getElementById('erExport').addEventListener('click', erExportSvg);
+        }
+
+        function erExportSvg() {
+            const svg = document.getElementById('erSvg');
+            if (!svg) return;
+            // 画面のテーマ変数を実際の色に焼き込む
+            const cs = getComputedStyle(document.documentElement);
+            let out = svg.outerHTML.replace(/var\((--[a-z-]+)\)/g, (m, v) => cs.getPropertyValue(v).trim() || '#888');
+            const style = `<style>
+                .er-edge{fill:none;stroke:${cs.getPropertyValue('--border-bright').trim()};stroke-width:1.2}
+                .er-edge.cross{stroke-dasharray:4 3}
+                .er-tablename{font-family:sans-serif;font-size:11px;fill:${cs.getPropertyValue('--text-primary').trim()}}
+                .er-col{font-family:monospace;font-size:9.5px;fill:${cs.getPropertyValue('--text-secondary').trim()}}
+                .er-col.pk{fill:${cs.getPropertyValue('--accent').trim()}}
+                .er-col.fk{fill:${cs.getPropertyValue('--warning').trim()}}
+                .er-domain-label{font-family:monospace;font-size:10px}
+                text{dominant-baseline:middle}
+            </style>`;
+            out = out.replace('<defs>', `<rect width="100%" height="100%" fill="${cs.getPropertyValue('--bg-primary').trim()}"/>${style}<defs>`);
+            const blob = new Blob([out], { type: 'image/svg+xml' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `er-${(profileState && profileState.currentSchema) || 'schema'}.svg`;
+            a.click();
+            URL.revokeObjectURL(a.href);
+        }
+
+        // ============================================
         // Dataset profiles
         // ============================================
 
@@ -2365,6 +2903,7 @@ INSERT INTO example VALUES (1);"></textarea>
                     return;
                 }
                 showToast(`${label} (${result.schema}) に切り替えました`);
+                ER.model = null;   // スキーマが変わったので ER も作り直す
                 await Promise.all([loadProfiles(), loadTables(), loadCompletions()]);
                 currentTable = null;
             } catch (e) {
@@ -2400,6 +2939,7 @@ INSERT INTO example VALUES (1);"></textarea>
                     const errs = (result.errors || [result.error]).slice(0, 3).join(' / ');
                     showToast(`初期化でエラー: ${errs}`, 'error');
                 }
+                ER.model = null;   // スキーマが変わったので ER も作り直す
                 await Promise.all([loadProfiles(), loadTables(), loadCompletions()]);
             } catch (e) {
                 showToast('初期化に失敗しました', 'error');
@@ -2535,6 +3075,38 @@ INSERT INTO example VALUES (1);"></textarea>
                     body: JSON.stringify({ sql })
                 });
                 return result;
+            } finally {
+                hideLoading();
+            }
+        }
+
+        /**
+         * 全行を取り切る版。/queries は fetch-size で切って cursor-id を返すので、
+         * done になるまで /cursors/{id}/fetch を追う。メタデータ系のように
+         * 100 行を超える結果を扱うところで使う。
+         */
+        async function executeSQLAll(sql, fetchSize = 1000) {
+            showLoading();
+            try {
+                const first = await apiCall('/queries', {
+                    method: 'POST',
+                    body: JSON.stringify({ sql, 'fetch-size': fetchSize })
+                });
+                if (first.error) return first;
+                const rows = (first.rows || []).slice();
+                let cursorId = first['cursor-id'];
+                let done = first.done !== false;
+                let guard = 0;
+                while (!done && cursorId && guard++ < 200) {
+                    const page = await apiCall(`/cursors/${cursorId}/fetch`, {
+                        method: 'POST',
+                        body: JSON.stringify({ 'fetch-size': fetchSize })
+                    });
+                    if (page.error) break;
+                    (page.rows || []).forEach(r => rows.push(r));
+                    done = page.done !== false;
+                }
+                return { columns: first.columns, rows, done: true };
             } finally {
                 hideLoading();
             }
@@ -3193,8 +3765,14 @@ INSERT INTO example VALUES (1);"></textarea>
                 document.querySelectorAll('.sub-panel').forEach(p => p.classList.remove('active'));
                 tab.classList.add('active');
                 document.getElementById(`subtab-${tab.dataset.subtab}`).classList.add('active');
+                if (tab.dataset.subtab === 'er') {
+                    document.getElementById('erTitle').textContent =
+                        'ER — ' + ((profileState && profileState.currentSchema) || '');
+                    if (!ER.model) loadEr(); else erFit();
+                }
             });
         });
+        erSetupInteractions();
 
         // Create Table modal tab switching (Form/DDL)
         document.querySelectorAll('#createTableTabs .sub-tab').forEach(tab => {
