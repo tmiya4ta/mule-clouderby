@@ -719,7 +719,16 @@ output application/json
             <java:args>#[{profileId: vars.requestedProfile as String, sessionId: vars.sessionId as String}]</java:args>
         </java:invoke-static>
         <set-variable variableName="httpStatus" value="#[payload.status default (if (payload.ok == true) 200 else 500)]" doc:name="Status"/>
-        <set-payload value="#[payload]" mimeType="application/json"/>
+        <!-- apply() は java.util.Map を返すので、mimeType を付けるだけでは
+             Java シリアライズのまま出てしまう。明示的に JSON へ変換する -->
+        <ee:transform doc:name="To JSON">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
         <error-handler ref="global-error-handler"/>
     </flow>
 
