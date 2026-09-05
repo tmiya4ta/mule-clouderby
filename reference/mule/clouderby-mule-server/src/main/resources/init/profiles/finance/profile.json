@@ -1,50 +1,40 @@
 {
   "id": "finance",
   "name": "Finance",
-  "nameJa": "金融業",
   "description": "Retail banking core: branches, customers (CIF), deposit accounts, transactions, cards, lending, credit risk and AML.",
-  "descriptionJa": "リテールバンキングの基幹システム。拠点・顧客(CIF)・預金口座・取引・カード・融資・与信リスク・マネロン対策を含む。",
   "icon": "🏦",
   "domains": [
     {
       "prefix": "BRN",
-      "name": "Branch / Org",
-      "nameJa": "拠点・組織"
+      "name": "Branch / Org"
     },
     {
       "prefix": "CIF",
-      "name": "Customer Information",
-      "nameJa": "顧客情報"
+      "name": "Customer Information"
     },
     {
       "prefix": "ACC",
-      "name": "Deposit Accounts",
-      "nameJa": "預金口座"
+      "name": "Deposit Accounts"
     },
     {
       "prefix": "TXN",
-      "name": "Transactions",
-      "nameJa": "取引"
+      "name": "Transactions"
     },
     {
       "prefix": "CRD",
-      "name": "Cards",
-      "nameJa": "カード"
+      "name": "Cards"
     },
     {
       "prefix": "LON",
-      "name": "Lending",
-      "nameJa": "融資"
+      "name": "Lending"
     },
     {
       "prefix": "RSK",
-      "name": "Risk",
-      "nameJa": "与信・リスク"
+      "name": "Risk"
     },
     {
       "prefix": "AML",
-      "name": "AML / Compliance",
-      "nameJa": "マネロン対策"
+      "name": "AML / Compliance"
     }
   ],
   "tables": [

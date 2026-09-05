@@ -12,3 +12,6 @@ target/
 __pycache__/
 *.pyc
 
+
+# Derby writes this wherever the JVM runs
+derby.log

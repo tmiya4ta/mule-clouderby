@@ -22,7 +22,7 @@ cd reference/mule/clouderby-mule-server
 JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 mvn clean package
 ```
 
-Artifact: `target/mule-clouderby-1.17.0-mule-application.jar`
+Artifact: `target/mule-clouderby-1.17.1-mule-application.jar`
 (the name follows `artifactId` / `version` in `pom.xml`)
 
 ### Run
@@ -37,8 +37,8 @@ cp target/mule-clouderby-*-mule-application.jar ~/srv/mule-enterprise-standalone
 **CloudHub 2.0 (yc CLI):**
 
 ```bash
-yc deploy file <org> <env> <group> mule-clouderby 1.17.0 \
-  target/mule-clouderby-1.17.0-mule-application.jar target=ps:<private-space>
+yc deploy file <org> <env> <group> mule-clouderby 1.17.1 \
+  target/mule-clouderby-1.17.1-mule-application.jar target=ps:<private-space>
 ```
 
 ### Configuration

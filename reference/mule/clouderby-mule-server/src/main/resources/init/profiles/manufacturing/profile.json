@@ -1,50 +1,40 @@
 {
   "id": "manufacturing",
   "name": "Manufacturing",
-  "nameJa": "製造業",
   "description": "Materials manufacturer ERP: master data, inventory, sales, procurement, production, equipment, finance and R&D.",
-  "descriptionJa": "素材メーカーの基幹システム。マスタ・在庫・販売・購買・製造・設備・財務・研究開発を一通り含む。",
   "icon": "🏭",
   "domains": [
     {
       "prefix": "MDM",
-      "name": "Master Data",
-      "nameJa": "マスタデータ"
+      "name": "Master Data"
     },
     {
       "prefix": "INV",
-      "name": "Inventory",
-      "nameJa": "在庫・入出荷"
+      "name": "Inventory"
     },
     {
       "prefix": "SAL",
-      "name": "Sales",
-      "nameJa": "販売"
+      "name": "Sales"
     },
     {
       "prefix": "PRC",
-      "name": "Procurement",
-      "nameJa": "購買"
+      "name": "Procurement"
     },
     {
       "prefix": "MFG",
-      "name": "Manufacturing",
-      "nameJa": "製造"
+      "name": "Manufacturing"
     },
     {
       "prefix": "EQP",
-      "name": "Equipment",
-      "nameJa": "設備"
+      "name": "Equipment"
     },
     {
       "prefix": "FIN",
-      "name": "Finance",
-      "nameJa": "財務会計"
+      "name": "Finance"
     },
     {
       "prefix": "RND",
-      "name": "R&D",
-      "nameJa": "研究開発"
+      "name": "R&D"
     }
   ],
   "tables": [
