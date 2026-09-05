@@ -148,6 +148,14 @@ public class ProfileManager {
             denied.put("error", "A valid X-Clouderby-Session-Id is required to apply a profile");
             return denied;
         }
+        if (!profileIds().contains(profileId)) {
+            Map<String, Object> unknown = new LinkedHashMap<>();
+            unknown.put("ok", false);
+            unknown.put("status", 400);
+            unknown.put("error", "Unknown profile: " + profileId);
+            unknown.put("available", profileIds());
+            return unknown;
+        }
         return applyInternal(profileId);
     }
 
