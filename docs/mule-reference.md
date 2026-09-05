@@ -22,7 +22,7 @@ cd reference/mule/clouderby-mule-server
 JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 mvn clean package
 ```
 
-ビルド成果物: `target/mule-clouderby-1.14.3-mule-application.jar`
+ビルド成果物: `target/mule-clouderby-1.15.0-mule-application.jar`
 (名前は `pom.xml` の `artifactId` / `version` に従います)
 
 ### 実行
@@ -37,8 +37,8 @@ cp target/mule-clouderby-*-mule-application.jar ~/srv/mule-enterprise-standalone
 **CloudHub 2.0 (yc CLI):**
 
 ```bash
-yc deploy file <org> <env> <group> mule-clouderby 1.14.3 \
-  target/mule-clouderby-1.14.3-mule-application.jar target=ps:<private-space>
+yc deploy file <org> <env> <group> mule-clouderby 1.15.0 \
+  target/mule-clouderby-1.15.0-mule-application.jar target=ps:<private-space>
 ```
 
 ### 設定
@@ -62,12 +62,20 @@ yc deploy file <org> <env> <group> mule-clouderby 1.14.3 \
 ### データセットプロファイル
 
 プロファイルは **スキーマ (DDL) + 初期データ (CSV)** をひとまとめにした単位です。
-jar の `/init/profiles/<id>/` に入っており、実行時に切り替えられます。
+**すべてのプロファイルが起動時にロードされ、それぞれ専用の Derby スキーマに入ります。**
+切り替えは `SET SCHEMA` なので、データは消えず、いつでも両方使えます。
 
-| id | 内容 | テーブル数 | 行数 |
-|----|------|-----------|------|
-| `manufacturing` | 素材メーカーの基幹システム。マスタ・在庫・販売・購買・製造・設備・財務会計・研究開発 | 52 | 427 |
-| `finance` | リテールバンキング。拠点・顧客(CIF)・預金口座・取引・カード・融資・与信・マネロン対策 | 25 | 2,864 |
+| id | スキーマ | 内容 | テーブル数 | 行数 |
+|----|---------|------|-----------|------|
+| `manufacturing` | `MANUFACTURING` | 素材メーカーの基幹システム。マスタ・在庫・販売・購買・製造・設備・財務会計・研究開発 | 52 | 427 |
+| `finance` | `FINANCE` | リテールバンキング。拠点・顧客(CIF)・預金口座・取引・カード・融資・与信・マネロン対策 | 25 | 2,864 |
+
+プロファイル id を大文字にしたものがスキーマ名です。修飾すれば1つのクエリで両方を跨げます。
+
+```sql
+SELECT (SELECT COUNT(*) FROM MANUFACTURING.INV_INVENTORY) AS INV,
+       (SELECT COUNT(*) FROM FINANCE.ACC_ACCOUNTS) AS ACC FROM SYSIBM.SYSDUMMY1
+```
 
 ```
 src/main/resources/init/
@@ -75,43 +83,64 @@ src/main/resources/init/
 └── profiles/
     ├── manufacturing/
     │   ├── profile.json           # UI用メタデータ + テーブルのロード順
-    │   ├── ddl.sql
+    │   ├── ddl.sql                # 修飾なし。スキーマを設定した接続で流す
     │   ├── identity_restart.sql   # IDENTITY 採番のリスタート
     │   └── csv/<TABLE>.csv
     └── finance/
         └── (同じ構成)
 ```
 
-切り替えは管理UIの **Profiles** タブ、またはAPIから行います。
+#### 接続時にスキーマを選ぶ
 
-```bash
-curl http://localhost:8081/api/profiles                       # カタログと現在の状態
-curl -X POST http://localhost:8081/api/profiles/apply \
-  -H 'Content-Type: application/json' -d '{"profile":"finance"}'
+JDBC URL のパス、または `POST /sessions` の `database` でプロファイルを指定します。
+未指定ならサーバの既定スキーマになります。
+
+```
+jdbc:clouderby://host:443/finance?secure=true      -> FINANCE スキーマ
+jdbc:clouderby://host:443/manufacturing?secure=true -> MANUFACTURING スキーマ
 ```
 
-適用すると **既存テーブルはすべてDROPされ**、選んだプロファイルのDDLとCSVで作り直されます。
-このときスキーマが変わるため **開いているclouderbyセッションはすべてクローズされます**。
-JDBCクライアントは再接続してください。レスポンスの `sessionsClosed` に件数が入ります。
+```bash
+curl -X POST http://localhost:8081/sessions -H 'Content-Type: application/json' \
+  -d '{"database":"finance","user":"mule","password":"mule123"}'
+# -> {"session-id":"...","schema":"FINANCE","profile":"finance"}
+```
 
-起動時に投入するプロファイルは、次の優先順で決まります。
+#### 実行中に切り替える
 
-1. すでにDBに適用済みのプロファイル (UI/APIでの選択が再起動後も残る)
+管理UIの **Profiles** タブ、または API から。
+
+```bash
+curl http://localhost:8081/api/profiles -H "X-Clouderby-Session-Id: $SID"
+
+# 表示の切り替え (非破壊)
+curl -X POST http://localhost:8081/api/profiles/select \
+  -H 'Content-Type: application/json' -H "X-Clouderby-Session-Id: $SID" \
+  -d '{"profile":"finance"}'
+
+# そのスキーマだけを初期データで作り直す (破壊的、他プロファイルには影響なし)
+curl -X POST http://localhost:8081/api/profiles/reload \
+  -H 'Content-Type: application/json' -H "X-Clouderby-Session-Id: $SID" \
+  -d '{"profile":"finance"}'
+```
+
+`select` は **そのセッションのスキーマ** と **新規接続の既定** を変えます。
+接続中の他セッションはそのままです (実行中のクエリの足元でスキーマを変えないため)。
+どちらも有効な `X-Clouderby-Session-Id` が必要です。
+
+新規接続の既定は、次の優先順で決まります。
+
+1. `select` で選ばれた値 (DBの `APP.CLOUDERBY_STATE` に記録)
 2. `db.init.profile` — 設定ファイル、またはデプロイ時のアプリケーションプロパティ
    (`yc deploy ... +db.init.profile=finance`)。後者が設定ファイルより優先されます
 3. `/init/profiles.json` の `defaultProfile`
 
 どれが効いたかは `GET /api/profiles` の `startup` で確認できます。
 
-```json
-{ "startup": { "profile": "finance",
-               "source": "config file (db.init.profile, via the Spring property)" } }
-```
-
-> **注意:** CloudHub 2.0 の `/tmp` は再起動で消えます。UI/API での切り替えは
-> DBの `CLOUDERBY_PROFILE` 表に記録されますが、その表ごと消えるため、
-> レプリカが再起動すると上記の 2. または 3. で決まるプロファイルに戻ります。
-> 恒久的に既定を変えるなら設定ファイルかデプロイ時プロパティで指定してください。
+> **注意:** CloudHub 2.0 の `/tmp` は再起動で消えます。`select` の結果は
+> `APP.CLOUDERBY_STATE` に記録されますが、その表ごと消えるため、レプリカが
+> 再起動すると 2. または 3. の値に戻ります。恒久的に既定を変えるなら
+> 設定ファイルかデプロイ時プロパティで指定してください。
 
 新しいプロファイルを足すには、`profiles/<id>/` を作って `profiles.json` の
 `profiles` 配列にidを追加します。`finance` のデータは
@@ -142,10 +171,11 @@ JDBCクライアントは再接続してください。レスポンスの `sessi
 | パス | メソッド | 説明 |
 |------|---------|------|
 | `/` | GET | 管理UI (`src/main/resources/static/index.html`) |
-| `/api/db/tables` | GET | テーブル一覧 (UI用) |
-| `/api/completions` | GET | SQL補完候補 (UI用) |
-| `/api/profiles` | GET | プロファイルのカタログ、現在の状態、起動時の解決経路 (`startup`) |
-| `/api/profiles/apply` | POST | プロファイルの適用 |
+| `/api/db/tables` | GET | 現在スキーマのテーブル一覧 (UI用、要セッション) |
+| `/api/completions` | GET | 現在スキーマのSQL補完候補 (UI用、要セッション) |
+| `/api/profiles` | GET | カタログ、各プロファイルの件数、このセッションが見ているスキーマ |
+| `/api/profiles/select` | POST | 表示スキーマの切り替え (非破壊) |
+| `/api/profiles/reload` | POST | 1スキーマだけを初期データで作り直す |
 
 ### 動作確認
 
@@ -162,7 +192,7 @@ curl -X POST http://localhost:8081/sessions \
 curl -X POST http://localhost:8081/queries \
   -H "Content-Type: application/json" \
   -H "X-Clouderby-Session-Id: <session-id>" \
-  -d '{"sql": "SELECT * FROM INV_WAREHOUSES"}'
+  -d '{"sql": "SELECT * FROM INV_WAREHOUSES"}'   # セッションのスキーマで解決される
 ```
 
 ## クライアント (clouderby-mule-client)

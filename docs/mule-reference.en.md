@@ -22,7 +22,7 @@ cd reference/mule/clouderby-mule-server
 JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 mvn clean package
 ```
 
-Artifact: `target/mule-clouderby-1.14.3-mule-application.jar`
+Artifact: `target/mule-clouderby-1.15.0-mule-application.jar`
 (the name follows `artifactId` / `version` in `pom.xml`)
 
 ### Run
@@ -37,8 +37,8 @@ cp target/mule-clouderby-*-mule-application.jar ~/srv/mule-enterprise-standalone
 **CloudHub 2.0 (yc CLI):**
 
 ```bash
-yc deploy file <org> <env> <group> mule-clouderby 1.14.3 \
-  target/mule-clouderby-1.14.3-mule-application.jar target=ps:<private-space>
+yc deploy file <org> <env> <group> mule-clouderby 1.15.0 \
+  target/mule-clouderby-1.15.0-mule-application.jar target=ps:<private-space>
 ```
 
 ### Configuration
@@ -61,13 +61,22 @@ Three config files ship with the app: `config-local.yaml`, `config-cloudhub.yaml
 
 ### Dataset profiles
 
-A profile bundles a **schema (DDL) and its sample data (CSV)**. Profiles live under
-`/init/profiles/<id>/` in the jar and can be swapped at runtime.
+A profile bundles a **schema (DDL) and its sample data (CSV)**. **Every profile is
+loaded at startup, each into its own Derby schema**, so switching is a `SET SCHEMA`:
+nothing is dropped and both datasets stay usable at all times.
 
-| id | Contents | Tables | Rows |
-|----|----------|--------|------|
-| `manufacturing` | Materials manufacturer ERP: master data, inventory, sales, procurement, production, equipment, finance and R&D | 52 | 427 |
-| `finance` | Retail banking: branches, customers (CIF), deposit accounts, transactions, cards, lending, credit risk and AML | 25 | 2,864 |
+| id | Schema | Contents | Tables | Rows |
+|----|--------|----------|--------|------|
+| `manufacturing` | `MANUFACTURING` | Materials manufacturer ERP: master data, inventory, sales, procurement, production, equipment, finance and R&D | 52 | 427 |
+| `finance` | `FINANCE` | Retail banking: branches, customers (CIF), deposit accounts, transactions, cards, lending, credit risk and AML | 25 | 2,864 |
+
+The schema name is the profile id upper-cased. Qualify the names and a single
+query can span both:
+
+```sql
+SELECT (SELECT COUNT(*) FROM MANUFACTURING.INV_INVENTORY) AS INV,
+       (SELECT COUNT(*) FROM FINANCE.ACC_ACCOUNTS) AS ACC FROM SYSIBM.SYSDUMMY1
+```
 
 ```
 src/main/resources/init/
@@ -75,48 +84,70 @@ src/main/resources/init/
 └── profiles/
     ├── manufacturing/
     │   ├── profile.json           # UI metadata + table load order
-    │   ├── ddl.sql
+    │   ├── ddl.sql                # unqualified; run on a connection with the schema set
     │   ├── identity_restart.sql   # IDENTITY counter restarts
     │   └── csv/<TABLE>.csv
     └── finance/
         └── (same layout)
 ```
 
-Switch profiles from the **Profiles** tab in the admin UI, or through the API:
+#### Choosing a schema at connect time
 
-```bash
-curl http://localhost:8081/api/profiles                       # catalog and current state
-curl -X POST http://localhost:8081/api/profiles/apply \
-  -H 'Content-Type: application/json' -d '{"profile":"finance"}'
+Name the profile in the JDBC URL path, or in the `database` field of
+POST /sessions. Without one you get the server default.
+
+```
+jdbc:clouderby://host:443/finance?secure=true       -> FINANCE schema
+jdbc:clouderby://host:443/manufacturing?secure=true -> MANUFACTURING schema
 ```
 
-Applying a profile **drops every existing table** and recreates the database from that
-profile's DDL and CSVs. Because the schema changes, **every open clouderby session is
-closed**; JDBC clients must reconnect. The response reports how many in `sessionsClosed`.
+```bash
+curl -X POST http://localhost:8081/sessions -H 'Content-Type: application/json' \
+  -d '{"database":"finance","user":"mule","password":"mule123"}'
+# -> {"session-id":"...","schema":"FINANCE","profile":"finance"}
+```
 
-The profile seeded at startup is resolved in this order:
+#### Switching at runtime
 
-1. A profile already applied to the database (a UI/API choice survives a restart)
+From the **Profiles** tab in the admin UI, or through the API:
+
+```bash
+curl http://localhost:8081/api/profiles -H "X-Clouderby-Session-Id: $SID"
+
+# switch what is in view (non-destructive)
+curl -X POST http://localhost:8081/api/profiles/select \
+  -H 'Content-Type: application/json' -H "X-Clouderby-Session-Id: $SID" \
+  -d '{"profile":"finance"}'
+
+# rebuild just that schema from the seed data (destructive, scoped to it)
+curl -X POST http://localhost:8081/api/profiles/reload \
+  -H 'Content-Type: application/json' -H "X-Clouderby-Session-Id: $SID" \
+  -d '{"profile":"finance"}'
+```
+
+`select` changes **the calling session's schema** and **the default new sessions
+get**. Sessions already open are left alone, rather than having the schema
+changed under a running query. Both endpoints require a valid
+`X-Clouderby-Session-Id`.
+
+The default for new sessions is resolved in this order:
+
+1. Whatever `select` last chose (recorded in `APP.CLOUDERBY_STATE`)
 2. `db.init.profile` -- from the config file, or as a deploy-time application
    property (`yc deploy ... +db.init.profile=finance`), which takes precedence
    over the config file
 3. `defaultProfile` in `/init/profiles.json`
 
-`GET /api/profiles` reports which one won, under `startup`:
+`GET /api/profiles` reports which one won, under `startup`.
 
-```json
-{ "startup": { "profile": "finance",
-               "source": "config file (db.init.profile, via the Spring property)" } }
-```
+> **Note:** CloudHub 2.0's `/tmp` does not survive a restart. A `select` is
+> recorded in `APP.CLOUDERBY_STATE`, but that table goes with it, so a restarted
+> replica falls back to 2. or 3. above. To change the default for good, set it in
+> the config file or as a deploy-time property.
 
-> **Note:** CloudHub 2.0's `/tmp` does not survive a restart. A UI/API switch is
-> recorded in the `CLOUDERBY_PROFILE` table, but that table goes with it, so a
-> restarted replica falls back to 2. or 3. above. To change the default for good,
-> set it in the config file or as a deploy-time property.
-
-To add a profile, create `profiles/<id>/` and add its id to the `profiles` array in
-`profiles.json`. The `finance` data is generated by `tools/gen_finance_data.py`
-(fixed seed, reproducible).
+To add a profile, create `profiles/<id>/` and add its id to the `profiles` array
+in `profiles.json`. The `finance` data is generated by
+`tools/gen_finance_data.py` (fixed seed, reproducible).
 
 ### Endpoints
 
@@ -143,10 +174,11 @@ To add a profile, create `profiles/<id>/` and add its id to the `profiles` array
 | Path | Method | Description |
 |------|--------|-------------|
 | `/` | GET | Admin UI (`src/main/resources/static/index.html`) |
-| `/api/db/tables` | GET | Table list (for the UI) |
-| `/api/completions` | GET | SQL completion candidates (for the UI) |
-| `/api/profiles` | GET | Profile catalog, current state, and how the startup profile was resolved (`startup`) |
-| `/api/profiles/apply` | POST | Apply a profile |
+| `/api/db/tables` | GET | Tables of the session's schema (for the UI; needs a session) |
+| `/api/completions` | GET | Completion candidates for the session's schema (for the UI; needs a session) |
+| `/api/profiles` | GET | Catalog, per-profile row counts, and the schema this session is on |
+| `/api/profiles/select` | POST | Switch the schema in view (non-destructive) |
+| `/api/profiles/reload` | POST | Rebuild one schema from its seed data |
 
 ### Smoke test
 

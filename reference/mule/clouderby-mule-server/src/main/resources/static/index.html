@@ -1680,9 +1680,12 @@
             <div class="panel" id="panel-profiles">
                 <div class="profiles-panel">
                     <div class="profiles-intro">
-                        データセットプロファイルは <strong>スキーマ + 初期データ</strong> をひとまとめにしたものです。
-                        適用するとデータベース上のテーブルはすべて削除され、選んだプロファイルの DDL と CSV で作り直されます。
-                        <strong>開いている clouderby セッションはすべて閉じられる</strong>ため、JDBC クライアントは再接続が必要です。
+                        データセットプロファイルは <strong>スキーマ + 初期データ</strong> をひとまとめにしたもので、
+                        <strong>すべて同時にロード済み</strong>です。切り替えは Derby の
+                        <code>SET SCHEMA</code> なので、データは消えず、いつでも戻せます。
+                        切り替えるとこの画面のセッションと<strong>新規接続の既定</strong>が変わります
+                        (接続中の他セッションはそのまま)。JDBC からは
+                        <code>jdbc:clouderby://host:port/<em>&lt;profile&gt;</em></code> で直接指定できます。
                     </div>
                     <div class="profiles-current" id="profilesCurrent">読み込み中...</div>
                     <div class="profiles-grid" id="profilesGrid"></div>
@@ -1933,8 +1936,6 @@ INSERT INTO example VALUES (1);"></textarea>
         let sessionId = null;
         let currentTable = null;
         let currentUser = null;
-        // プロファイル適用でサーバ側がセッションを閉じるため、張り直しに使う
-        let currentCreds = null;
         let profileState = null;
 
         // Data tab pagination state
@@ -2123,7 +2124,7 @@ INSERT INTO example VALUES (1);"></textarea>
             completionData.columns = [];
             if (completionData.tables.length === 0) return;
             try {
-                const result = await executeSQL(`SELECT T.TABLENAME, C.COLUMNNAME FROM SYS.SYSCOLUMNS C JOIN SYS.SYSTABLES T ON C.REFERENCEID = T.TABLEID JOIN SYS.SYSSCHEMAS S ON T.SCHEMAID = S.SCHEMAID WHERE S.SCHEMANAME = 'APP' AND T.TABLETYPE = 'T' ORDER BY T.TABLENAME, C.COLUMNNUMBER`);
+                const result = await executeSQL(`SELECT T.TABLENAME, C.COLUMNNAME FROM SYS.SYSCOLUMNS C JOIN SYS.SYSTABLES T ON C.REFERENCEID = T.TABLEID JOIN SYS.SYSSCHEMAS S ON T.SCHEMAID = S.SCHEMAID WHERE S.SCHEMANAME = CURRENT SCHEMA AND T.TABLETYPE = 'T' ORDER BY T.TABLENAME, C.COLUMNNUMBER`);
                 if (result.rows) {
                     const colSet = new Set();
                     result.rows.forEach(row => {
@@ -2282,110 +2283,128 @@ INSERT INTO example VALUES (1);"></textarea>
         function renderProfiles() {
             if (!profileState) return;
             const current = profileState.current;
+            const dflt = profileState.defaultProfile;
             const badge = document.getElementById('profilesCurrent');
             const cur = (profileState.profiles || []).find(p => p.id === current);
             badge.innerHTML = current
-                ? `\u25cf 現在のプロファイル: <b>${escapeHtml(cur ? cur.nameJa : current)}</b> ` +
-                  `<span style="color:var(--text-muted)">(${escapeHtml(current)})</span>`
-                : '\u25cb プロファイル未適用';
+                ? `\u25cf 表示中: <b>${escapeHtml(cur ? cur.nameJa : current)}</b> ` +
+                  `<span style="color:var(--text-muted)">(スキーマ ${escapeHtml(profileState.currentSchema)})</span>`
+                : `\u25cb スキーマ未設定 <span style="color:var(--text-muted)">(既定 ${escapeHtml(dflt || '-')})</span>`;
 
             document.getElementById('profilesGrid').innerHTML =
                 (profileState.profiles || []).map(p => {
                     const isCurrent = p.id === current;
+                    const isDefault = p.id === dflt;
                     const domains = (p.domains || []).map(d =>
                         `<span class="profile-domain"><b>${escapeHtml(d.prefix)}</b> ${escapeHtml(d.nameJa || d.name)}</span>`
                     ).join('');
+                    const badges =
+                        (isCurrent ? '<div class="profile-badge">表示中</div>' : '') +
+                        (isDefault ? '<div class="profile-badge" style="background:var(--bg-elevated);color:var(--text-secondary)">既定</div>' : '');
                     return `
                     <div class="profile-card ${isCurrent ? 'is-current' : ''}">
                         <div class="profile-card-head">
                             <div class="profile-icon">${escapeHtml(p.icon || '\u{1F4E6}')}</div>
                             <div>
                                 <div class="profile-name">${escapeHtml(p.nameJa || p.name)}</div>
-                                <div class="profile-name-en">${escapeHtml(p.name)}</div>
+                                <div class="profile-name-en">${escapeHtml(p.schema)}</div>
                             </div>
-                            ${isCurrent ? '<div class="profile-badge">LOADED</div>' : ''}
+                            <div style="margin-left:auto;display:flex;gap:.35rem">${badges}</div>
                         </div>
                         <div class="profile-desc">${escapeHtml(p.descriptionJa || p.description)}</div>
                         <div class="profile-domains">${domains}</div>
                         <div class="profile-stats">
                             <span>テーブル <b>${p.tableCount}</b></span>
-                            <span>ドメイン <b>${(p.domains || []).length}</b></span>
+                            <span>行 <b>${p.totalRows.toLocaleString()}</b></span>
                         </div>
-                        <div class="profile-actions">
+                        <div class="profile-actions" style="display:flex;gap:.5rem">
                             <button class="action-btn ${isCurrent ? '' : 'primary'}"
-                                    data-apply-profile="${escapeHtml(p.id)}"
-                                    ${isCurrent ? '' : ''}>
-                                ${isCurrent ? '\u21bb 再投入' : '\u25b6 このプロファイルを適用'}
+                                    data-select-profile="${escapeHtml(p.id)}" ${isCurrent ? 'disabled' : ''}>
+                                ${isCurrent ? '\u2713 表示中' : '\u25b6 これに切り替え'}
+                            </button>
+                            <button class="action-btn" data-reload-profile="${escapeHtml(p.id)}"
+                                    title="このスキーマだけを初期データで作り直します">
+                                \u21bb 初期化
                             </button>
                         </div>
                     </div>`;
                 }).join('');
 
-            const tables = profileState.tables || [];
+            // 表示中プロファイルのテーブルと件数
+            const cp = (profileState.profiles || []).find(p => p.id === current)
+                    || (profileState.profiles || [])[0];
+            const tables = cp ? (cp.tables || []) : [];
             document.getElementById('profileTables').innerHTML = tables.length ? `
-                <div class="section-title">現在のテーブルと件数 (${tables.length})</div>
+                <div class="section-title">${escapeHtml(cp.schema)} のテーブルと件数 (${tables.length})</div>
                 <div class="profile-tables-grid">
                     ${tables.map(t => `<div class="profile-table-row">
                         <span>${escapeHtml(t.table)}</span><span>${t.rows}</span>
                     </div>`).join('')}
                 </div>` : '';
 
-            document.querySelectorAll('[data-apply-profile]').forEach(btn => {
-                btn.addEventListener('click', () => applyProfile(btn.dataset.applyProfile));
+            document.querySelectorAll('[data-select-profile]').forEach(btn => {
+                btn.addEventListener('click', () => selectProfile(btn.dataset.selectProfile));
+            });
+            document.querySelectorAll('[data-reload-profile]').forEach(btn => {
+                btn.addEventListener('click', () => reloadProfile(btn.dataset.reloadProfile));
             });
         }
 
-        async function applyProfile(profileId) {
+        /** Switch the schema this session (and new sessions) look at. Non-destructive. */
+        async function selectProfile(profileId) {
+            const p = (profileState.profiles || []).find(x => x.id === profileId);
+            const label = p ? (p.nameJa || p.name) : profileId;
+            showLoading();
+            try {
+                const result = await apiCall('/api/profiles/select', {
+                    method: 'POST',
+                    body: JSON.stringify({ profile: profileId })
+                });
+                if (!result.ok) {
+                    showToast(result.error || '切り替えに失敗しました', 'error');
+                    return;
+                }
+                showToast(`${label} (${result.schema}) に切り替えました`);
+                await Promise.all([loadProfiles(), loadTables(), loadCompletions()]);
+                currentTable = null;
+            } catch (e) {
+                showToast('切り替えに失敗しました', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        /** Rebuild one profile's schema from the seed data. Destructive, but only that schema. */
+        async function reloadProfile(profileId) {
             const p = (profileState.profiles || []).find(x => x.id === profileId);
             const label = p ? (p.nameJa || p.name) : profileId;
             const ok = await showConfirmDialog({
-                title: 'プロファイルを適用しますか?',
-                body: `<b>${escapeHtml(label)}</b> を適用します。<br><br>` +
-                      '現在のテーブルはすべて <b>削除</b> され、このプロファイルの ' +
-                      'スキーマと初期データで作り直されます。<br>' +
-                      '開いている clouderby セッションはすべて閉じられます。',
-                okLabel: '適用する',
+                title: 'このスキーマを初期化しますか?',
+                body: `<b>${escapeHtml(label)}</b> (スキーマ ${escapeHtml(p ? p.schema : '')}) を初期データで作り直します。<br><br>` +
+                      'このスキーマのテーブルは <b>削除して再作成</b> されます。加えた変更は失われます。<br>' +
+                      '他のプロファイルには影響しません。',
+                okLabel: '初期化する',
                 icon: '\u26a0'
             });
             if (!ok) return;
 
             showLoading();
             try {
-                const result = await apiCall('/api/profiles/apply', {
+                const result = await apiCall('/api/profiles/reload', {
                     method: 'POST',
                     body: JSON.stringify({ profile: profileId })
                 });
-
-                // サーバがこのセッションも閉じているので張り直す
-                await reconnectSession();
-
                 if (result.ok) {
-                    showToast(`${label}: ${result.totalRows} 行を投入しました`);
+                    showToast(`${label}: ${result.totalRows} 行を再投入しました`);
                 } else {
-                    const errs = (result.errors || []).slice(0, 3).join(' / ');
-                    showToast(`適用は完了しましたがエラーがあります: ${errs}`, 'error');
+                    const errs = (result.errors || [result.error]).slice(0, 3).join(' / ');
+                    showToast(`初期化でエラー: ${errs}`, 'error');
                 }
                 await Promise.all([loadProfiles(), loadTables(), loadCompletions()]);
             } catch (e) {
-                showToast('プロファイルの適用に失敗しました', 'error');
-                await reconnectSession();
+                showToast('初期化に失敗しました', 'error');
             } finally {
                 hideLoading();
-            }
-        }
-
-        /** Re-create the clouderby session the server closed during a profile switch. */
-        async function reconnectSession() {
-            if (!currentCreds) return;
-            sessionId = null;
-            try {
-                const r = await apiCall('/sessions', {
-                    method: 'POST',
-                    body: JSON.stringify(currentCreds)
-                });
-                if (r && r['session-id']) sessionId = r['session-id'];
-            } catch (e) {
-                showToast('セッションを張り直せませんでした。再ログインしてください', 'error');
             }
         }
 
@@ -2409,7 +2428,6 @@ INSERT INTO example VALUES (1);"></textarea>
                     throw new Error('No session ID received');
                 }
                 currentUser = username;
-                currentCreds = { user: username, password: password };
 
                 loginScreen.classList.add('hidden');
                 appContainer.classList.add('active');
@@ -2432,7 +2450,6 @@ INSERT INTO example VALUES (1);"></textarea>
                 } catch (e) {}
             }
             sessionId = null;
-            currentCreds = null;
             appContainer.classList.remove('active');
             loginScreen.classList.remove('hidden');
             document.getElementById('username').value = '';
@@ -2602,7 +2619,7 @@ INSERT INTO example VALUES (1);"></textarea>
         // Tables Management
         async function loadTables() {
             try {
-                const result = await executeSQL("SELECT T.TABLENAME AS name FROM SYS.SYSTABLES T JOIN SYS.SYSSCHEMAS S ON T.SCHEMAID = S.SCHEMAID WHERE S.SCHEMANAME = 'APP' AND T.TABLETYPE = 'T' ORDER BY T.TABLENAME");
+                const result = await executeSQL("SELECT T.TABLENAME AS name FROM SYS.SYSTABLES T JOIN SYS.SYSSCHEMAS S ON T.SCHEMAID = S.SCHEMAID WHERE S.SCHEMANAME = CURRENT SCHEMA AND T.TABLETYPE = 'T' ORDER BY T.TABLENAME");
                 const tablesList = document.getElementById('tablesList');
                 const importSelect = document.getElementById('importTargetTable');
 

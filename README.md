@@ -155,14 +155,16 @@ implementations use different ones.
 
 ### Dataset profiles (Mule server)
 
-The Mule server ships **dataset profiles** -- a schema bundled with its sample data --
-that can be swapped at runtime from the Profiles tab in the admin UI or through
-`POST /api/profiles/apply`.
+The Mule server ships **dataset profiles** -- a schema bundled with its sample data.
+All of them are loaded at startup, each into its own Derby schema, so **both are
+usable at any time**. Switching what you see is a `SET SCHEMA` -- from the Profiles
+tab in the admin UI, `POST /api/profiles/select`, or at connect time with
+`jdbc:clouderby://host:port/finance` -- and no data is dropped.
 
-| id | Contents | Tables | Rows |
-|----|----------|--------|------|
-| `manufacturing` (default) | Materials manufacturer ERP: master data, inventory, sales, procurement, production, equipment, finance and R&D | 52 | 427 |
-| `finance` | Retail banking: branches, customers (CIF), deposit accounts, transactions, cards, lending, credit risk and AML | 25 | 2,864 |
+| id | Schema | Contents | Tables | Rows |
+|----|--------|----------|--------|------|
+| `manufacturing` (default) | `MANUFACTURING` | Materials manufacturer ERP: master data, inventory, sales, procurement, production, equipment, finance and R&D | 52 | 427 |
+| `finance` | `FINANCE` | Retail banking: branches, customers (CIF), deposit accounts, transactions, cards, lending, credit risk and AML | 25 | 2,864 |
 
 See the [Mule reference](docs/mule-reference.en.md#dataset-profiles) for details.
 

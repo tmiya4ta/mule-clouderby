@@ -158,8 +158,21 @@ public class ClouderbySessionManager {
         }
     }
 
+    /**
+     * Open a session on the schema the client asked for.
+     *
+     * <p>{@code database} is the path segment of the JDBC URL
+     * ({@code jdbc:clouderby://host:port/finance}) or the {@code database} field
+     * of POST /sessions. It names a dataset profile; anything unrecognised falls
+     * back to the server default, so old clients keep working.
+     */
     public SessionData createSession(String database) throws SQLException {
         Connection conn = getConnectionWithClassLoader();
+        String profileId = com.muledev.init.ProfileManager.resolveProfile(database);
+        if (profileId != null) {
+            com.muledev.init.ProfileManager.setSchema(
+                conn, com.muledev.init.ProfileManager.schemaOf(profileId));
+        }
         String sessionId = UUID.randomUUID().toString();
         SessionData session = new SessionData(sessionId, conn);
         sessions.put(sessionId, session);
@@ -183,21 +196,6 @@ public class ClouderbySessionManager {
         return sessions.size();
     }
 
-    /**
-     * Close every open session and return how many were closed.
-     *
-     * <p>Used when the database changes shape (a dataset profile switch): the
-     * sessions hold live Derby connections with cached PreparedStatements that
-     * would fail against tables that no longer exist, so clients are forced to
-     * reconnect rather than left holding a broken session.
-     */
-    public int closeAllSessions() {
-        int n = 0;
-        for (String id : new java.util.ArrayList<>(sessions.keySet())) {
-            if (closeSession(id)) n++;
-        }
-        return n;
-    }
 
     /**
      * Get a connection from the DataSource for system-level queries

@@ -22,6 +22,13 @@ public class SqlExecutor {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("session-id", session.getSessionId());
         result.put("server-version", "1.0.0");
+        try {
+            String schema = session.getConnection().getSchema();
+            result.put("schema", schema);
+            result.put("profile", com.muledev.init.ProfileManager.profileOfSchema(schema));
+        } catch (Exception ignored) {
+            // schema reporting is informational
+        }
         return result;
     }
 

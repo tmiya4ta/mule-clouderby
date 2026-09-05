@@ -9,13 +9,13 @@ import javax.sql.DataSource;
 import java.util.Map;
 
 /**
- * Seeds the embedded Derby database on startup by applying a dataset profile
- * (see {@link ProfileManager}).
+ * Seeds the embedded Derby database on startup: every dataset profile gets its
+ * own schema and all of them are loaded (see {@link ProfileManager}), so both
+ * datasets are queryable from the moment the app starts.
  *
- * <p>Which profile: the {@code defaultProfile} property below, else the
- * {@code defaultProfile} recorded in {@code /init/profiles.json}. A profile that
- * was applied earlier through the API/UI wins over both, so a restart keeps
- * whatever the operator last selected.
+ * <p>This only picks which schema a new session lands on by default: the
+ * {@code defaultProfile} property below, else the {@code db.init.profile} system
+ * property, else {@code defaultProfile} in {@code /init/profiles.json}.
  */
 public class DatabaseInitializer implements InitializingBean {
 
@@ -53,36 +53,25 @@ public class DatabaseInitializer implements InitializingBean {
         // to avoid Derby XJ040.C classloader conflict in Mule
         Thread.currentThread().setContextClassLoader(dataSource.getClass().getClassLoader());
 
-        String already = ProfileManager.currentProfile();
-        if (already != null) {
-            LOG.info("[DB-INIT] Profile '{}' already applied; leaving data as is", already);
-            return;
-        }
+        // Every profile gets its own schema and they are all seeded, so both
+        // datasets stay queryable and switching never destroys anything.
+        Map<String, Object> r = ProfileManager.ensureAllSeeded();
+        LOG.info("[DB-INIT] Seeding complete, ok={}", r.get("ok"));
 
-        String profile = resolveProfile();
+        String profile = resolveDefaultProfile();
         if (profile == null) {
-            LOG.error("[DB-INIT] No profile to apply (check /init/profiles.json)");
+            LOG.error("[DB-INIT] No default profile (check /init/profiles.json)");
             return;
         }
-
-        try {
-            LOG.info("[DB-INIT] Applying profile '{}' ...", profile);
-            Map<String, Object> r = ProfileManager.applyInternal(profile);
-            LOG.info("[DB-INIT] Profile '{}' applied: {} rows, ok={}",
-                     profile, r.get("totalRows"), r.get("ok"));
-            if (Boolean.FALSE.equals(r.get("ok"))) {
-                LOG.error("[DB-INIT] Errors during seed: {}", r.get("errors"));
-            }
-        } catch (Exception e) {
-            LOG.error("[DB-INIT] Error applying profile '{}': {}", profile, e.getMessage(), e);
-        }
+        LOG.info("[DB-INIT] Default schema for new sessions: {}",
+                 ProfileManager.schemaOf(profile));
     }
 
     /**
      * The Spring value may arrive as an unresolved {@code ${...}} placeholder
      * depending on how the app is launched, so treat that as "not set".
      */
-    private String resolveProfile() {
+    private String resolveDefaultProfile() {
         String p = defaultProfile;
         String source = "config file (db.init.profile, via the Spring property)";
 
@@ -91,12 +80,12 @@ public class DatabaseInitializer implements InitializingBean {
             source = "system property (db.init.profile)";
         }
         if (p == null || p.trim().isEmpty()) {
-            p = ProfileManager.defaultProfileId();
+            p = ProfileManager.catalogDefaultProfileId();
             source = "profiles.json (defaultProfile)";
         }
         p = p == null ? null : p.trim();
         ProfileManager.recordStartupResolution(p, source);
-        LOG.info("[DB-INIT] startup profile '{}' resolved from {}", p, source);
+        LOG.info("[DB-INIT] default profile '{}' resolved from {}", p, source);
         return p;
     }
 }
