@@ -696,13 +696,15 @@ output application/json
 // profile.json は Java から生テキストで返ってくるので、ここで JSON として展開する
 ---
 {
-    profiles: payload.profiles map ((p) -> {
+    // 展開順に注意: profile.json 側にも "tables" (テーブル名の配列) があるため、
+    // 件数つきの一覧は tableRows という別名で返す
+    profiles: payload.profiles map ((p) -> read(p.json, "application/json") ++ {
         id: p.id,
         schema: p.schema,
         tableCount: p.tableCount,
         totalRows: p.totalRows,
-        tables: p.tables
-    } ++ read(p.json, "application/json")),
+        tableRows: p.tables
+    }),
     current: payload.current,
     currentSchema: payload.currentSchema,
     defaultProfile: payload.defaultProfile,
