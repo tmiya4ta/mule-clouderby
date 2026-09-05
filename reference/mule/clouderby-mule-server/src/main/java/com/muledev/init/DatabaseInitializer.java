@@ -84,13 +84,19 @@ public class DatabaseInitializer implements InitializingBean {
      */
     private String resolveProfile() {
         String p = defaultProfile;
-        LOG.info("[DB-INIT] db.init.profile injected as: {}", p);
+        String source = "config file (db.init.profile, via the Spring property)";
+
         if (p == null || p.trim().isEmpty() || p.startsWith("${")) {
             p = System.getProperty("db.init.profile");
+            source = "system property (db.init.profile)";
         }
         if (p == null || p.trim().isEmpty()) {
             p = ProfileManager.defaultProfileId();
+            source = "profiles.json (defaultProfile)";
         }
-        return p == null ? null : p.trim();
+        p = p == null ? null : p.trim();
+        ProfileManager.recordStartupResolution(p, source);
+        LOG.info("[DB-INIT] startup profile '{}' resolved from {}", p, source);
+        return p;
     }
 }

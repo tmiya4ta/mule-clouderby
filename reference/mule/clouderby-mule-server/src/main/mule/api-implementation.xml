@@ -697,6 +697,7 @@ output application/json
     } ++ read(p.json, "application/json")),
     current: payload.current,
     defaultProfile: payload.defaultProfile,
+    startup: payload.startup,
     openSessions: payload.openSessions,
     tables: payload.tables
 }]]></ee:set-payload>

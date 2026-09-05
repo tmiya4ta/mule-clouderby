@@ -49,10 +49,23 @@ public class ProfileManager {
     private static DataSource dataSource;
     private static ClouderbySessionManager sessionManager;
     private static volatile String currentProfileId;
+    /** How the startup profile was chosen, for {@link #status()}. */
+    private static volatile String startupProfile;
+    private static volatile String startupSource;
 
     public static void configure(DataSource ds, ClouderbySessionManager sm) {
         dataSource = ds;
         sessionManager = sm;
+    }
+
+    /**
+     * Recorded by {@link DatabaseInitializer} so operators can see where the
+     * startup profile came from. The log line alone is not enough: CloudHub
+     * keeps only the first few lines of startup output.
+     */
+    static void recordStartupResolution(String profile, String source) {
+        startupProfile = profile;
+        startupSource = source;
     }
 
     // ================================================================ catalog
@@ -103,6 +116,10 @@ public class ProfileManager {
         out.put("current", currentProfile());
         out.put("defaultProfile", defaultProfileId());
         out.put("openSessions", sessionManager == null ? 0 : sessionManager.getSessionCount());
+        Map<String, Object> startup = new LinkedHashMap<>();
+        startup.put("profile", startupProfile);
+        startup.put("source", startupSource);
+        out.put("startup", startup);
 
         List<Map<String, Object>> counts = new ArrayList<>();
         String cur = currentProfileId;

@@ -22,7 +22,7 @@ cd reference/mule/clouderby-mule-server
 JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 mvn clean package
 ```
 
-ビルド成果物: `target/mule-clouderby-1.14.2-mule-application.jar`
+ビルド成果物: `target/mule-clouderby-1.14.3-mule-application.jar`
 (名前は `pom.xml` の `artifactId` / `version` に従います)
 
 ### 実行
@@ -37,8 +37,8 @@ cp target/mule-clouderby-*-mule-application.jar ~/srv/mule-enterprise-standalone
 **CloudHub 2.0 (yc CLI):**
 
 ```bash
-yc deploy file <org> <env> <group> mule-clouderby 1.14.2 \
-  target/mule-clouderby-1.14.2-mule-application.jar target=ps:<private-space>
+yc deploy file <org> <env> <group> mule-clouderby 1.14.3 \
+  target/mule-clouderby-1.14.3-mule-application.jar target=ps:<private-space>
 ```
 
 ### 設定
