@@ -6,24 +6,99 @@
   "descriptionJa": "リテールバンキングの基幹システム。拠点・顧客(CIF)・預金口座・取引・カード・融資・与信リスク・マネロン対策を含む。",
   "icon": "🏦",
   "domains": [
-    { "prefix": "BRN", "name": "Branch / Org", "nameJa": "拠点・組織" },
-    { "prefix": "CIF", "name": "Customer Information", "nameJa": "顧客情報" },
-    { "prefix": "ACC", "name": "Deposit Accounts", "nameJa": "預金口座" },
-    { "prefix": "TXN", "name": "Transactions", "nameJa": "取引" },
-    { "prefix": "CRD", "name": "Cards", "nameJa": "カード" },
-    { "prefix": "LON", "name": "Lending", "nameJa": "融資" },
-    { "prefix": "RSK", "name": "Risk", "nameJa": "与信・リスク" },
-    { "prefix": "AML", "name": "AML / Compliance", "nameJa": "マネロン対策" }
+    {
+      "prefix": "BRN",
+      "name": "Branch / Org",
+      "nameJa": "拠点・組織"
+    },
+    {
+      "prefix": "CIF",
+      "name": "Customer Information",
+      "nameJa": "顧客情報"
+    },
+    {
+      "prefix": "ACC",
+      "name": "Deposit Accounts",
+      "nameJa": "預金口座"
+    },
+    {
+      "prefix": "TXN",
+      "name": "Transactions",
+      "nameJa": "取引"
+    },
+    {
+      "prefix": "CRD",
+      "name": "Cards",
+      "nameJa": "カード"
+    },
+    {
+      "prefix": "LON",
+      "name": "Lending",
+      "nameJa": "融資"
+    },
+    {
+      "prefix": "RSK",
+      "name": "Risk",
+      "nameJa": "与信・リスク"
+    },
+    {
+      "prefix": "AML",
+      "name": "AML / Compliance",
+      "nameJa": "マネロン対策"
+    }
   ],
   "tables": [
-    "BRN_BRANCHES", "BRN_EMPLOYEES", "BRN_ATMS",
-    "CIF_CUSTOMERS", "CIF_ADDRESSES", "CIF_KYC_CHECKS", "CIF_RELATIONSHIPS",
-    "ACC_PRODUCTS", "ACC_INTEREST_RATES", "ACC_ACCOUNTS", "ACC_BALANCE_HISTORY",
-    "CRD_MERCHANTS", "CRD_CARDS",
-    "TXN_TRANSACTIONS", "TXN_TRANSFERS", "TXN_STANDING_ORDERS",
+    "BRN_BRANCHES",
+    "BRN_EMPLOYEES",
+    "BRN_ATMS",
+    "CIF_CUSTOMERS",
+    "CIF_ADDRESSES",
+    "CIF_KYC_CHECKS",
+    "CIF_RELATIONSHIPS",
+    "ACC_PRODUCTS",
+    "ACC_INTEREST_RATES",
+    "ACC_ACCOUNTS",
+    "ACC_BALANCE_HISTORY",
+    "CRD_MERCHANTS",
+    "CRD_CARDS",
+    "TXN_TRANSACTIONS",
+    "TXN_TRANSFERS",
+    "TXN_STANDING_ORDERS",
     "CRD_AUTHORIZATIONS",
-    "LON_PRODUCTS", "LON_LOANS", "LON_REPAYMENTS", "LON_COLLATERALS",
-    "RSK_CREDIT_SCORES", "RSK_EXPOSURES",
-    "AML_ALERTS", "AML_WATCHLIST"
-  ]
+    "LON_PRODUCTS",
+    "LON_LOANS",
+    "LON_REPAYMENTS",
+    "LON_COLLATERALS",
+    "RSK_CREDIT_SCORES",
+    "RSK_EXPOSURES",
+    "AML_ALERTS",
+    "AML_WATCHLIST"
+  ],
+  "tableDescriptions": {
+    "BRN_BRANCHES": "Branch master: the twelve branches, their region, address and opening date. BR012 is the online-only branch.",
+    "BRN_EMPLOYEES": "Bank staff assigned to a branch, with role and hire date. Loan officers are referenced from LON_LOANS.",
+    "BRN_ATMS": "ATMs belonging to a branch, with cash on hand, service state and last service date.",
+    "CIF_CUSTOMERS": "Customer Information File: 120 individuals and corporates with segment, risk rating, income and home branch. The hub the rest of the schema hangs off.",
+    "CIF_ADDRESSES": "Customer addresses by type (home, work, registered), with the primary one flagged.",
+    "CIF_KYC_CHECKS": "Know-your-customer checks: document type, result and expiry. Higher-risk customers also carry an enhanced due diligence record.",
+    "CIF_RELATIONSHIPS": "Links between customers: spouse, parent, guarantor, group company.",
+    "ACC_PRODUCTS": "Deposit product catalogue: savings, checking, time deposits and foreign currency, with base rate and fees.",
+    "ACC_INTEREST_RATES": "Interest rates applied to a deposit product over a validity period.",
+    "ACC_ACCOUNTS": "Deposit accounts: balance, available balance, holds and overdraft limit, tied to a customer, product and branch.",
+    "ACC_BALANCE_HISTORY": "Daily closing balances per account, with debit and credit totals. Unique on (ACCOUNT_ID, AS_OF_DATE).",
+    "CRD_MERCHANTS": "Merchant master for card acceptance, with category and MCC.",
+    "CRD_CARDS": "Debit and credit cards issued to a customer against an account, with limit, available credit and status.",
+    "TXN_TRANSACTIONS": "Account transaction ledger: deposits, withdrawals, transfers, card payments, fees and interest, with the channel and running balance.",
+    "TXN_TRANSFERS": "Outgoing transfers to other banks, with beneficiary, fee, status and failure reason.",
+    "TXN_STANDING_ORDERS": "Recurring debits set up on an account: payee, amount, frequency and next run date.",
+    "CRD_AUTHORIZATIONS": "Card authorisation attempts: amount, merchant, approve/decline and whether it settled.",
+    "LON_PRODUCTS": "Lending product catalogue: mortgage, auto, education, personal and business, with amount and term ranges.",
+    "LON_LOANS": "Loan contracts: principal, outstanding balance, rate, term, monthly payment and days delinquent.",
+    "LON_REPAYMENTS": "Repayment schedule and actuals per instalment. Unique on (LOAN_ID, INSTALLMENT_NO).",
+    "LON_COLLATERALS": "Collateral pledged against a loan, with appraised value and loan-to-value ratio.",
+    "RSK_CREDIT_SCORES": "Credit scores per customer, with the model used, rating band and probability of default.",
+    "RSK_EXPOSURES": "Credit exposure per customer by type, against the approved limit, with utilisation.",
+    "AML_ALERTS": "Anti-money-laundering alerts raised by rule, linked to the customer and the triggering transaction.",
+    "AML_WATCHLIST": "Sanctions and watch lists screened against. Dummy entries only; no real individuals or entities."
+  }
 }

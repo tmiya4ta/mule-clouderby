@@ -693,11 +693,11 @@ var sqlKeywords = ["SELECT", "FROM", "WHERE", "INSERT", "INTO", "VALUES", "UPDAT
             <ee:message>
                 <ee:set-payload><![CDATA[%dw 2.0
 output application/json
-// profile.json は Java から生テキストで返ってくるので、ここで JSON として展開する
+// profile.json arrives from Java as raw text, so expand it into JSON here
 ---
 {
-    // 展開順に注意: profile.json 側にも "tables" (テーブル名の配列) があるため、
-    // 件数つきの一覧は tableRows という別名で返す
+    // Order matters: profile.json also has a "tables" key (the list of names), so the
+    // list with row counts goes out under a different name
     profiles: payload.profiles map ((p) -> read(p.json, "application/json") ++ {
         id: p.id,
         schema: p.schema,

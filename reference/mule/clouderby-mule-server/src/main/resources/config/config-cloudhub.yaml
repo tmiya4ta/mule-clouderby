@@ -16,6 +16,6 @@ clouderby:
 db:
   init:
     enabled: "true"
-    # 起動時に投入するデータセットプロファイル: manufacturing | finance
-    # (UI の Profiles タブから実行時に切り替え可能)
+    # Dataset profile seeded at startup: manufacturing | finance
+    # (switchable at runtime from the Profiles tab in the admin UI)
     profile: "manufacturing"

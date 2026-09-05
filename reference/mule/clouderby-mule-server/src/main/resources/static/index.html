@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
+            /* dark (default) */
             --bg-primary: #0f1729;
             --bg-secondary: #131d33;
             --bg-tertiary: #1a2744;
@@ -24,9 +25,56 @@
             --error: #f87171;
             --warning: #fbbf24;
             --success: #34d399;
+            --shadow: rgba(0, 0, 0, 0.45);
+            /* dark scrims used behind overlays, drawers and toasts */
+            --scrim-90: rgba(10, 14, 20, 0.9);
+            --scrim-85: rgba(10, 14, 20, 0.85);
+            --scrim-60: rgba(10, 14, 20, 0.6);
+            --scrim-50: rgba(10, 14, 20, 0.5);
+            --scrim-95: rgba(10, 14, 20, 0.95);
+            --vignette: rgba(0, 0, 0, 0.4);
+            /* SQL / DDL syntax */
+            --syn-kw: #c792ea;
+            --syn-ty: #82aaff;
+            --syn-ct: #f78c6c;
             --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
             --font-display: 'Space Grotesk', sans-serif;
+            /* UI scale, driven by the A- / A+ buttons */
+            --ui-scale: 1;
         }
+
+        :root[data-theme="light"] {
+            --bg-primary: #f5f7fb;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #eef2f8;
+            --bg-elevated: #e3eaf4;
+            --border: #d3dced;
+            --border-bright: #a9bad6;
+            --text-primary: #16233a;
+            --text-secondary: #46587a;
+            --text-muted: #8496b3;
+            --accent: #0b74b8;
+            --accent-dim: #0284c7;
+            --accent-glow: rgba(11, 116, 184, 0.18);
+            --error: #c2410c;
+            --warning: #a16207;
+            --success: #15803d;
+            --shadow: rgba(22, 35, 58, 0.14);
+            --syn-kw: #7c3aed;
+            --syn-ty: #1d4ed8;
+            --syn-ct: #b45309;
+            --shadow: rgba(22, 35, 58, 0.14);
+            --scrim-90: rgba(255, 255, 255, 0.92);
+            --scrim-85: rgba(255, 255, 255, 0.88);
+            --scrim-60: rgba(22, 35, 58, 0.35);
+            --scrim-50: rgba(255, 255, 255, 0.7);
+            --scrim-95: rgba(255, 255, 255, 0.96);
+            --vignette: rgba(22, 35, 58, 0.06);
+        }
+
+        /* Scales every rem-based size at once. The only px font sizes are inside the ER
+           SVG, which has its own zoom, so they are unaffected. */
+        html { font-size: calc(16px * var(--ui-scale)); }
 
         * {
             margin: 0;
@@ -74,7 +122,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: radial-gradient(ellipse at center, transparent 0%, rgba(0, 0, 0, 0.4) 100%);
+            background: radial-gradient(ellipse at center, transparent 0%, var(--vignette) 100%);
             pointer-events: none;
             z-index: 9999;
         }
@@ -271,6 +319,10 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
+            /* Wraps instead of clipping the right-hand buttons when the
+               interface is scaled up or the window is narrow. */
+            flex-wrap: wrap;
+            row-gap: 0.5rem;
             padding: 0.75rem 1.5rem;
             background: var(--bg-secondary);
             border-bottom: 1px solid var(--border);
@@ -279,7 +331,8 @@
         .header-left {
             display: flex;
             align-items: center;
-            gap: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem 2rem;
         }
 
         .app-title {
@@ -436,6 +489,7 @@
         }
 
         .nav-tab {
+            white-space: nowrap;
             padding: 0.5rem 1rem;
             background: transparent;
             border: none;
@@ -474,7 +528,9 @@
         .header-right {
             display: flex;
             align-items: center;
-            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 0.5rem 1rem;
         }
 
         .connection-status {
@@ -577,6 +633,7 @@
         }
 
         .action-btn {
+            white-space: nowrap;
             padding: 0.45rem 0.9rem;
             background: var(--bg-elevated);
             border: 1px solid var(--border);
@@ -641,7 +698,7 @@
             overflow-y: auto;
             z-index: 1000;
             min-width: 200px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 4px 12px var(--shadow);
             display: none;
         }
 
@@ -918,6 +975,37 @@
         .sub-tab.active {
             color: var(--accent);
             border-bottom-color: var(--accent);
+        }
+
+        .ui-scale-group {
+            display: inline-flex; align-items: center; gap: 0.2rem;
+            padding: 0 0.2rem; border: 1px solid var(--border); border-radius: 0.35rem;
+            background: var(--bg-tertiary);
+        }
+        .ui-scale-group .action-btn { border: none; background: transparent; padding: 0.2rem 0.4rem; }
+        .ui-scale-label {
+            font-family: var(--font-mono); font-size: 0.68rem; color: var(--text-muted);
+            min-width: 2.6rem; text-align: center;
+        }
+
+        /* ---- table description above the SQL editor ---- */
+        .table-note {
+            display: flex; align-items: baseline; gap: 0.6rem;
+            padding: 0.5rem 0.85rem; margin-bottom: 0.6rem;
+            border: 1px solid var(--border); border-left: 3px solid var(--accent);
+            border-radius: 0.35rem; background: var(--bg-tertiary);
+        }
+        .table-note.empty { border-left-color: var(--border-bright); }
+        .table-note-name {
+            font-family: var(--font-mono); font-size: 0.78rem; color: var(--accent);
+            white-space: nowrap;
+        }
+        .table-note-text {
+            font-size: 0.78rem; color: var(--text-secondary); line-height: 1.55;
+        }
+        .table-note-meta {
+            margin-left: auto; font-family: var(--font-mono); font-size: 0.7rem;
+            color: var(--text-muted); white-space: nowrap;
         }
 
         /* ---- ER diagram ---- */
@@ -1198,7 +1286,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(10, 14, 20, 0.9);
+            background: var(--scrim-90);
             display: none;
             align-items: center;
             justify-content: center;
@@ -1219,7 +1307,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(10, 14, 20, 0.5);
+            background: var(--scrim-50);
             display: none;
             align-items: center;
             justify-content: center;
@@ -1270,7 +1358,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(10, 14, 20, 0.6);
+            background: var(--scrim-60);
             z-index: 10001;
             opacity: 0;
             pointer-events: none;
@@ -1334,9 +1422,9 @@
             word-break: break-word;
         }
 
-        .ddl-drawer-body .kw { color: #c792ea; }
-        .ddl-drawer-body .ty { color: #82aaff; }
-        .ddl-drawer-body .ct { color: #f78c6c; }
+        .ddl-drawer-body .kw { color: var(--syn-kw); }
+        .ddl-drawer-body .ty { color: var(--syn-ty); }
+        .ddl-drawer-body .ct { color: var(--syn-ct); }
         .ddl-drawer-body .pn { color: var(--text-muted); }
         .ddl-drawer-body .nm { color: var(--accent); }
 
@@ -1346,7 +1434,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(10, 14, 20, 0.95);
+            background: var(--scrim-95);
             display: none;
             align-items: center;
             justify-content: center;
@@ -1471,7 +1559,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(10, 14, 20, 0.85);
+            background: var(--scrim-85);
             display: none;
             align-items: center;
             justify-content: center;
@@ -1629,6 +1717,12 @@
                     <span class="status-dot"></span>
                     <span>Connected</span>
                 </div>
+                <div class="ui-scale-group" title="Interface size">
+                    <button class="action-btn" id="uiScaleDown" aria-label="Smaller interface">A−</button>
+                    <span class="ui-scale-label" id="uiScaleLabel">100%</span>
+                    <button class="action-btn" id="uiScaleUp" aria-label="Larger interface">A+</button>
+                </div>
+                <button class="action-btn" id="themeBtn" title="Toggle light / dark">◐ Theme</button>
                 <button class="action-btn" id="connectionInfoBtn">📋 Connection</button>
                 <button class="action-btn" id="changePasswordBtn">🔑 Password</button>
                 <button class="logout-btn" id="logoutBtn">Disconnect</button>
@@ -1669,6 +1763,11 @@
                         <div class="sub-panel active" id="subtab-console">
                             <div class="sql-console">
                                 <div class="editor-area">
+                                    <div class="table-note empty" id="tableNote">
+                                        <span class="table-note-name" id="tableNoteName">No table selected</span>
+                                        <span class="table-note-text" id="tableNoteText">Pick a table on the left to see what it holds, or just write SQL below.</span>
+                                        <span class="table-note-meta" id="tableNoteMeta"></span>
+                                    </div>
                                     <div class="editor-header">
                                         <span class="editor-title">SQL Query</span>
                                         <div class="editor-actions">
@@ -1739,22 +1838,22 @@
                                     <div class="er-legend" id="erLegend"></div>
                                     <div class="er-tools">
                                         <label class="er-toggle">
-                                            <input type="checkbox" id="erAllCols"> 全カラム
+                                            <input type="checkbox" id="erAllCols"> All columns
                                         </label>
-                                        <button class="action-btn" id="erFit" title="全体表示">⤢ Fit</button>
+                                        <button class="action-btn" id="erFit" title="Fit to view">⤢ Fit</button>
                                         <button class="action-btn" id="erZoomOut">−</button>
                                         <span class="er-zoom" id="erZoomLabel">100%</span>
                                         <button class="action-btn" id="erZoomIn">+</button>
-                                        <button class="action-btn" id="erExport" title="SVG をダウンロード">⤓ SVG</button>
+                                        <button class="action-btn" id="erExport" title="Download as SVG">⤓ SVG</button>
                                     </div>
                                 </div>
                                 <div class="er-canvas" id="erCanvas">
                                     <div class="results-empty" id="erEmpty">
                                         <div class="results-empty-icon">◱</div>
-                                        <div>ER 図を読み込み中...</div>
+                                        <div>Loading diagram…</div>
                                     </div>
                                 </div>
-                                <div class="er-hint">ドラッグで移動 / ホイールで拡大縮小 / テーブルをクリックで関連だけ表示</div>
+                                <div class="er-hint">Drag to pan · scroll to zoom · click a table to isolate its relationships · click a domain in the legend to hide it</div>
                             </div>
                         </div>
                     </div>
@@ -1766,14 +1865,14 @@
             <div class="panel" id="panel-profiles">
                 <div class="profiles-panel">
                     <div class="profiles-intro">
-                        データセットプロファイルは <strong>スキーマ + 初期データ</strong> をひとまとめにしたもので、
-                        <strong>すべて同時にロード済み</strong>です。切り替えは Derby の
-                        <code>SET SCHEMA</code> なので、データは消えず、いつでも戻せます。
-                        切り替えるとこの画面のセッションと<strong>新規接続の既定</strong>が変わります
-                        (接続中の他セッションはそのまま)。JDBC からは
-                        <code>jdbc:clouderby://host:port/<em>&lt;profile&gt;</em></code> で直接指定できます。
+                        A dataset profile bundles a <strong>schema and its sample data</strong>, and
+                        <strong>every profile is loaded at once</strong> — each in its own Derby schema.
+                        Switching is a <code>SET SCHEMA</code>, so nothing is dropped and you can always
+                        switch back. It changes this session and the <strong>default for new
+                        connections</strong>; sessions already open are left alone. JDBC clients can pick
+                        one directly with <code>jdbc:clouderby://host:port/<em>&lt;profile&gt;</em></code>.
                     </div>
-                    <div class="profiles-current" id="profilesCurrent">読み込み中...</div>
+                    <div class="profiles-current" id="profilesCurrent">Loading…</div>
                     <div class="profiles-grid" id="profilesGrid"></div>
                     <div class="profile-tables" id="profileTables"></div>
                 </div>
@@ -2344,6 +2443,101 @@ INSERT INTO example VALUES (1);"></textarea>
         }
 
         // ============================================
+        // Appearance: theme and interface size
+        // ============================================
+
+        const UI_SCALES = [0.85, 1, 1.15, 1.3, 1.5, 1.75, 2];
+
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            try { localStorage.setItem('clouderby_theme', theme); } catch (e) {}
+            const btn = document.getElementById('themeBtn');
+            if (btn) btn.textContent = theme === 'light' ? '☾ Dark' : '☀ Light';
+            // The ER diagram bakes colours in at render time, so redraw it.
+            if (ER.model) { erRenderLegend(); erRender(); }
+        }
+
+        function currentTheme() {
+            return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+        }
+
+        function applyUiScale(scale) {
+            document.documentElement.style.setProperty('--ui-scale', scale);
+            document.getElementById('uiScaleLabel').textContent = Math.round(scale * 100) + '%';
+            try { localStorage.setItem('clouderby_ui_scale', String(scale)); } catch (e) {}
+            if (ER.model) erFit();
+        }
+
+        function stepUiScale(dir) {
+            let cur = parseFloat(getComputedStyle(document.documentElement)
+                .getPropertyValue('--ui-scale')) || 1;
+            let i = UI_SCALES.reduce((best, v, idx) =>
+                Math.abs(v - cur) < Math.abs(UI_SCALES[best] - cur) ? idx : best, 0);
+            i = Math.min(UI_SCALES.length - 1, Math.max(0, i + dir));
+            applyUiScale(UI_SCALES[i]);
+        }
+
+        function setupAppearance() {
+            // No stored choice: follow the OS preference rather than forcing dark.
+            const prefersLight = window.matchMedia
+                && window.matchMedia('(prefers-color-scheme: light)').matches;
+            let theme = prefersLight ? 'light' : 'dark', scale = 1;
+            try {
+                theme = localStorage.getItem('clouderby_theme') || theme;
+                scale = parseFloat(localStorage.getItem('clouderby_ui_scale')) || 1;
+            } catch (e) {}
+            applyTheme(theme);
+            applyUiScale(scale);
+
+            document.getElementById('themeBtn').addEventListener('click',
+                () => applyTheme(currentTheme() === 'light' ? 'dark' : 'light'));
+            document.getElementById('uiScaleUp').addEventListener('click', () => stepUiScale(1));
+            document.getElementById('uiScaleDown').addEventListener('click', () => stepUiScale(-1));
+
+            // Ctrl/Cmd +/-/0 for interface size, without the browser's own zoom
+            window.addEventListener('keydown', e => {
+                if (!(e.ctrlKey || e.metaKey)) return;
+                if (e.key === '+' || e.key === '=') { e.preventDefault(); stepUiScale(1); }
+                else if (e.key === '-') { e.preventDefault(); stepUiScale(-1); }
+                else if (e.key === '0') { e.preventDefault(); applyUiScale(1); }
+            });
+        }
+
+        // ============================================
+        // Table description shown above the SQL editor
+        // ============================================
+
+        /** Per-table blurbs come from the active profile's profile.json. */
+        function tableDescriptions() {
+            if (!profileState) return {};
+            const p = (profileState.profiles || []).find(x => x.id === profileState.current);
+            return (p && p.tableDescriptions) || {};
+        }
+
+        function renderTableNote(tableName, rowCount) {
+            const note = document.getElementById('tableNote');
+            const nameEl = document.getElementById('tableNoteName');
+            const textEl = document.getElementById('tableNoteText');
+            const metaEl = document.getElementById('tableNoteMeta');
+            if (!tableName) {
+                note.classList.add('empty');
+                nameEl.textContent = 'No table selected';
+                textEl.textContent = 'Pick a table on the left to see what it holds, or just write SQL below.';
+                metaEl.textContent = '';
+                return;
+            }
+            const desc = tableDescriptions()[tableName.toUpperCase()];
+            const cols = completionData.tableColumns[tableName.toUpperCase()];
+            note.classList.remove('empty');
+            nameEl.textContent = tableName;
+            textEl.textContent = desc || 'No description available for this table.';
+            const bits = [];
+            if (cols) bits.push(cols.length + ' columns');
+            if (rowCount !== undefined && rowCount !== null) bits.push(rowCount.toLocaleString() + ' rows');
+            metaEl.textContent = bits.join('  ·  ');
+        }
+
+        // ============================================
         // ER diagram
         // ============================================
 
@@ -2362,21 +2556,35 @@ INSERT INTO example VALUES (1);"></textarea>
         const ER_PAD = 8;
         const ER_GAP_X = 46;
         const ER_GAP_Y = 40;
-        const ER_MAX_PER_ROW = 4;  // ドメイン内の1行あたり最大テーブル数
-        const ER_ASPECT = 1.9;     // 画面に合わせた目標アスペクト比 (横:縦)
+        const ER_MAX_PER_ROW = 4;  // max tables per row inside one domain
+        const ER_ASPECT = 1.9;     // target width:height, tuned for a landscape screen
         const ER_BOX_GAP = 80;
-        const ER_MARGIN = 40;      // ドメイン枠とラベルが外にはみ出す分の余白
+        const ER_MARGIN = 40;      // room for the domain frame and label drawn outside the box
 
-        // ドメイン接頭辞ごとの色。profile.json の domains 順に割り当てる
-        const ER_PALETTE = ['#7dd3fc', '#f0abfc', '#86efac', '#fcd34d',
-                            '#fca5a5', '#a5b4fc', '#5eead4', '#fdba74'];
+        // One colour per domain prefix, assigned in the order profile.json lists them.
+        // The dark set is pastel so it reads on a near-black ground; the light set is
+        // saturated so the same labels do not wash out on white.
+        const ER_PALETTE_DARK  = ['#7dd3fc', '#f0abfc', '#86efac', '#fcd34d',
+                                  '#fca5a5', '#a5b4fc', '#5eead4', '#fdba74'];
+        const ER_PALETTE_LIGHT = ['#0369a1', '#a21caf', '#15803d', '#a16207',
+                                  '#b91c1c', '#4338ca', '#0f766e', '#c2410c'];
+
+        function erPalette() {
+            return currentTheme() === 'light' ? ER_PALETTE_LIGHT : ER_PALETTE_DARK;
+        }
+
+        /** Colour for a domain, resolved at render time so it follows the theme. */
+        function erDomainColor(d) {
+            const i = ER.domainIndex.get(d) || 0;
+            return erPalette()[i % erPalette().length];
+        }
 
         function erDomainOf(table) {
             const i = table.indexOf('_');
             return i > 0 ? table.slice(0, i) : '—';
         }
 
-        /** Derby の DESCRIPTOR "BTREE (2,3)" から列番号を取り出す */
+        /** Pull the column positions out of a Derby descriptor like "BTREE (2,3)". */
         function erParseDescriptor(desc) {
             const m = String(desc || '').match(/\(([\d,\s]+)\)/);
             if (!m) return [];
@@ -2450,13 +2658,14 @@ INSERT INTO example VALUES (1);"></textarea>
                 erFit();
             } catch (e) {
                 canvas.innerHTML = '<div class="results-empty"><div class="results-empty-icon">⚠</div>' +
-                                   '<div>ER 図を作成できませんでした</div></div>';
+                                   '<div>Could not build the diagram</div></div>';
             }
         }
 
         /**
-         * ドメイン (テーブル名の接頭辞) ごとにまとめ、ドメイン内は FK の深さで
-         * 段組みする決定的なレイアウト。力学モデルより予測可能で重なりが出ない。
+         * Deterministic layout: cluster by domain (the table-name prefix), and within a
+         * cluster stack by foreign-key depth so masters sit above detail. Predictable and
+         * overlap-free, unlike a force-directed graph.
          */
         function erLayout() {
             const { tables, edges } = ER.model;
@@ -2469,13 +2678,13 @@ INSERT INTO example VALUES (1);"></textarea>
                 byDomain.get(d).push(n);
             });
 
-            // ドメイン内 FK の深さ (参照される側が上)
+            // Depth within the domain: a table sits below what it references
             const refs = new Map(names.map(n => [n, []]));
             edges.forEach(e => { if (refs.has(e.from)) refs.get(e.from).push(e.to); });
             const depth = new Map();
             function depthOf(n, seen) {
                 if (depth.has(n)) return depth.get(n);
-                if (seen.has(n)) return 0;                 // 循環は 0 扱い
+                if (seen.has(n)) return 0;                 // treat a cycle as depth 0
                 seen.add(n);
                 const d = erDomainOf(n);
                 let m = 0;
@@ -2491,7 +2700,7 @@ INSERT INTO example VALUES (1);"></textarea>
             const cardH = (t) => ER_HEAD_H + ER_PAD + erVisibleCols(t).length * ER_ROW_H
                                + (erHiddenColCount(t) > 0 ? ER_ROW_H : 0) + ER_PAD;
 
-            // ドメインごとの箱を組む
+            // Build one box per domain
             const boxes = [];
             [...byDomain.keys()].sort().forEach(d => {
                 const members = byDomain.get(d).slice().sort((a, b) =>
@@ -2513,13 +2722,13 @@ INSERT INTO example VALUES (1);"></textarea>
                 boxes.push({ domain: d, rows, w, h: h - ER_GAP_Y + 34 });
             });
 
-            // 箱を横長に詰める。折り返し幅は総面積から目標アスペクト比で決めるので、
-            // テーブル数やカラム表示の切り替えで縦横比が崩れない。
+            // Pack the boxes into bands. The wrap width comes from the total area and the
+            // target aspect, so the shape holds up as the table count or column mode changes.
             const area = boxes.reduce((a, b) => a + (b.w + ER_BOX_GAP) * (b.h + 70), 0);
             const widest = Math.max(...boxes.map(b => b.w));
             const band = Math.max(widest, Math.sqrt(area * ER_ASPECT));
 
-            // 高い箱から置くと帯の隙間が減る
+            // Tallest first leaves fewer gaps in a band
             const order = boxes.slice().sort((a, b) => b.h - a.h);
             let bx = 0, by = 0, bandH = 0;
             order.forEach(b => {
@@ -2529,7 +2738,7 @@ INSERT INTO example VALUES (1);"></textarea>
                 bandH = Math.max(bandH, b.h);
             });
 
-            // 箱の中にカードを置く
+            // Place the cards inside their box
             let maxX = 0, maxY = 0;
             boxes.forEach(b => {
                 let y = b.y + 30;
@@ -2550,11 +2759,11 @@ INSERT INTO example VALUES (1);"></textarea>
 
             ER.boxes = boxes;
             ER.size = { w: maxX + ER_MARGIN, h: maxY + ER_MARGIN };
-            ER.domainColor = new Map();
-            [...byDomain.keys()].sort().forEach((d, i) => ER.domainColor.set(d, ER_PALETTE[i % ER_PALETTE.length]));
+            ER.domainIndex = new Map();
+            [...byDomain.keys()].sort().forEach((d, i) => ER.domainIndex.set(d, i));
         }
 
-        /** 折りたたんで隠れている列数 */
+        /** How many columns are collapsed out of view. */
         function erHiddenColCount(t) {
             return ER.allCols ? 0 : t.cols.length - erVisibleCols(t).length;
         }
@@ -2567,11 +2776,11 @@ INSERT INTO example VALUES (1);"></textarea>
 
         function erRenderLegend() {
             const el = document.getElementById('erLegend');
-            el.innerHTML = [...ER.domainColor.keys()].map(d => {
+            el.innerHTML = [...ER.domainIndex.keys()].map(d => {
                 const off = ER.hidden.has(d) ? ' off' : '';
                 const n = [...ER.model.tables.keys()].filter(t => erDomainOf(t) === d).length;
                 return `<span class="er-legend-item${off}" data-er-domain="${escapeHtml(d)}">
-                    <span class="er-legend-swatch" style="background:${ER.domainColor.get(d)}"></span>
+                    <span class="er-legend-swatch" style="background:${erDomainColor(d)}"></span>
                     ${escapeHtml(d)} <span style="color:var(--text-muted)">${n}</span></span>`;
             }).join('');
             el.querySelectorAll('[data-er-domain]').forEach(item => {
@@ -2587,7 +2796,7 @@ INSERT INTO example VALUES (1);"></textarea>
             const { tables, edges } = ER.model;
             const visible = (n) => !ER.hidden.has(erDomainOf(n));
 
-            // フォーカス時は隣接テーブルだけ濃く
+            // With a table focused, keep only its neighbours at full opacity
             let hot = null;
             if (ER.focus && tables.has(ER.focus)) {
                 hot = new Set([ER.focus]);
@@ -2605,16 +2814,16 @@ INSERT INTO example VALUES (1);"></textarea>
                     <path d="M 0 2 L 0 8" stroke="var(--border-bright)" stroke-width="1.6" fill="none"/>
                 </marker></defs>`);
 
-            // ドメインの枠
+            // Domain frames
             ER.boxes.forEach(b => {
                 if (ER.hidden.has(b.domain)) return;
-                const c = ER.domainColor.get(b.domain);
+                const c = erDomainColor(b.domain);
                 parts.push(`<rect x="${b.x - 18}" y="${b.y - 8}" width="${b.w + 36}" height="${b.h + 16}"
                     rx="14" fill="${c}" fill-opacity="0.05" stroke="${c}" stroke-opacity="0.35" stroke-width="1"/>`);
                 parts.push(`<text class="er-domain-label" x="${b.x - 8}" y="${b.y + 8}" fill="${c}">${escapeHtml(b.domain)}</text>`);
             });
 
-            // FK の線 (カードの下に敷く)
+            // Foreign-key edges, drawn under the cards
             edges.forEach((e, i) => {
                 const a = tables.get(e.from), b = tables.get(e.to);
                 if (!a || !b || !visible(e.from) || !visible(e.to)) return;
@@ -2625,14 +2834,14 @@ INSERT INTO example VALUES (1);"></textarea>
                 const p = erEdgePath(a, b);
                 parts.push(`<path class="er-edge${cross ? ' cross' : ''}${isHot ? ' hot' : ''}${dim ? ' er-dim' : ''}"
                     d="${p.d}" marker-end="url(#erArrow)"/>`);
-                // 多側 (FK 側) にカラスの足
+                // Crow's foot on the many side (the FK end)
                 parts.push(erCrowsFoot(p.sx, p.sy, p.sdir, isHot));
             });
 
-            // テーブルカード
+            // Table cards
             [...tables.values()].forEach(t => {
                 if (!visible(t.name)) return;
-                const c = ER.domainColor.get(erDomainOf(t.name));
+                const c = erDomainColor(erDomainOf(t.name));
                 const dim = hot && !hot.has(t.name);
                 const cols = erVisibleCols(t);
                 const g = [`<g class="er-node${dim ? ' er-dim' : ''}" data-er-table="${escapeHtml(t.name)}">`];
@@ -2653,7 +2862,7 @@ INSERT INTO example VALUES (1);"></textarea>
                 const hiddenCols = erHiddenColCount(t);
                 if (hiddenCols > 0) {
                     const y = t.y + ER_HEAD_H + ER_PAD + cols.length * ER_ROW_H + ER_ROW_H / 2;
-                    g.push(`<text class="er-col" x="${t.x + 9}" y="${y}" fill="var(--text-muted)">…他 ${hiddenCols} 列</text>`);
+                    g.push(`<text class="er-col" x="${t.x + 9}" y="${y}" fill="var(--text-muted)">+${hiddenCols} more</text>`);
                 }
                 g.push('</g>');
                 parts.push(g.join(''));
@@ -2674,7 +2883,7 @@ INSERT INTO example VALUES (1);"></textarea>
             });
         }
 
-        /** カードの縁どうしを結ぶベジエ。近い辺同士を選ぶ */
+        /** Bezier between the nearest edges of the two cards. */
         function erEdgePath(a, b) {
             const ac = { x: a.x + a.w / 2, y: a.y + a.h / 2 };
             const bc = { x: b.x + b.w / 2, y: b.y + b.h / 2 };
@@ -2698,7 +2907,7 @@ INSERT INTO example VALUES (1);"></textarea>
             return { d: `M ${sx},${sy} C ${c1} ${c2} ${ex},${ey}`, sx, sy, sdir };
         }
 
-        /** 多側の記号 (crow's foot) */
+        /** The many-side marker. */
         function erCrowsFoot(x, y, dir, hot) {
             const L = 7, S = 5;
             const stroke = hot ? 'var(--accent)' : 'var(--border-bright)';
@@ -2773,7 +2982,7 @@ INSERT INTO example VALUES (1);"></textarea>
         function erExportSvg() {
             const svg = document.getElementById('erSvg');
             if (!svg) return;
-            // 画面のテーマ変数を実際の色に焼き込む
+            // Bake the live theme variables into real colours so the file stands alone
             const cs = getComputedStyle(document.documentElement);
             let out = svg.outerHTML.replace(/var\((--[a-z-]+)\)/g, (m, v) => cs.getPropertyValue(v).trim() || '#888');
             const style = `<style>
@@ -2813,7 +3022,7 @@ INSERT INTO example VALUES (1);"></textarea>
             } catch (e) {
                 grid.innerHTML = '';
                 document.getElementById('profilesCurrent').textContent =
-                    'プロファイル情報を取得できませんでした';
+                    'Could not load profile information';
                 showToast('Failed to load profiles', 'error');
             }
         }
@@ -2825,55 +3034,55 @@ INSERT INTO example VALUES (1);"></textarea>
             const badge = document.getElementById('profilesCurrent');
             const cur = (profileState.profiles || []).find(p => p.id === current);
             badge.innerHTML = current
-                ? `\u25cf 表示中: <b>${escapeHtml(cur ? cur.nameJa : current)}</b> ` +
-                  `<span style="color:var(--text-muted)">(スキーマ ${escapeHtml(profileState.currentSchema)})</span>`
-                : `\u25cb スキーマ未設定 <span style="color:var(--text-muted)">(既定 ${escapeHtml(dflt || '-')})</span>`;
+                ? `\u25cf Viewing <b>${escapeHtml(cur ? cur.name : current)}</b> ` +
+                  `<span style="color:var(--text-muted)">— schema ${escapeHtml(profileState.currentSchema)}</span>`
+                : `\u25cb No schema selected <span style="color:var(--text-muted)">(default ${escapeHtml(dflt || '-')})</span>`;
 
             document.getElementById('profilesGrid').innerHTML =
                 (profileState.profiles || []).map(p => {
                     const isCurrent = p.id === current;
                     const isDefault = p.id === dflt;
                     const domains = (p.domains || []).map(d =>
-                        `<span class="profile-domain"><b>${escapeHtml(d.prefix)}</b> ${escapeHtml(d.nameJa || d.name)}</span>`
+                        `<span class="profile-domain"><b>${escapeHtml(d.prefix)}</b> ${escapeHtml(d.name)}</span>`
                     ).join('');
                     const badges =
-                        (isCurrent ? '<div class="profile-badge">表示中</div>' : '') +
-                        (isDefault ? '<div class="profile-badge" style="background:var(--bg-elevated);color:var(--text-secondary)">既定</div>' : '');
+                        (isCurrent ? '<div class="profile-badge">VIEWING</div>' : '') +
+                        (isDefault ? '<div class="profile-badge" style="background:var(--bg-elevated);color:var(--text-secondary)">DEFAULT</div>' : '');
                     return `
                     <div class="profile-card ${isCurrent ? 'is-current' : ''}">
                         <div class="profile-card-head">
                             <div class="profile-icon">${escapeHtml(p.icon || '\u{1F4E6}')}</div>
                             <div>
-                                <div class="profile-name">${escapeHtml(p.nameJa || p.name)}</div>
+                                <div class="profile-name">${escapeHtml(p.name)}</div>
                                 <div class="profile-name-en">${escapeHtml(p.schema)}</div>
                             </div>
                             <div style="margin-left:auto;display:flex;gap:.35rem">${badges}</div>
                         </div>
-                        <div class="profile-desc">${escapeHtml(p.descriptionJa || p.description)}</div>
+                        <div class="profile-desc">${escapeHtml(p.description)}</div>
                         <div class="profile-domains">${domains}</div>
                         <div class="profile-stats">
-                            <span>テーブル <b>${p.tableCount}</b></span>
-                            <span>行 <b>${p.totalRows.toLocaleString()}</b></span>
+                            <span><b>${p.tableCount}</b> tables</span>
+                            <span><b>${p.totalRows.toLocaleString()}</b> rows</span>
                         </div>
                         <div class="profile-actions" style="display:flex;gap:.5rem">
                             <button class="action-btn ${isCurrent ? '' : 'primary'}"
                                     data-select-profile="${escapeHtml(p.id)}" ${isCurrent ? 'disabled' : ''}>
-                                ${isCurrent ? '\u2713 表示中' : '\u25b6 これに切り替え'}
+                                ${isCurrent ? '\u2713 Viewing' : '\u25b6 Switch to this'}
                             </button>
                             <button class="action-btn" data-reload-profile="${escapeHtml(p.id)}"
-                                    title="このスキーマだけを初期データで作り直します">
-                                \u21bb 初期化
+                                    title="Rebuild only this schema from its seed data">
+                                \u21bb Reset
                             </button>
                         </div>
                     </div>`;
                 }).join('');
 
-            // 表示中プロファイルのテーブルと件数
+            // Tables and row counts for the profile currently in view
             const cp = (profileState.profiles || []).find(p => p.id === current)
                     || (profileState.profiles || [])[0];
             const tables = cp ? (cp.tableRows || []) : [];
             document.getElementById('profileTables').innerHTML = tables.length ? `
-                <div class="section-title">${escapeHtml(cp.schema)} のテーブルと件数 (${tables.length})</div>
+                <div class="section-title">Tables in ${escapeHtml(cp.schema)} (${tables.length})</div>
                 <div class="profile-tables-grid">
                     ${tables.map(t => `<div class="profile-table-row">
                         <span>${escapeHtml(t.table)}</span><span>${t.rows}</span>
@@ -2891,7 +3100,7 @@ INSERT INTO example VALUES (1);"></textarea>
         /** Switch the schema this session (and new sessions) look at. Non-destructive. */
         async function selectProfile(profileId) {
             const p = (profileState.profiles || []).find(x => x.id === profileId);
-            const label = p ? (p.nameJa || p.name) : profileId;
+            const label = p ? p.name : profileId;
             showLoading();
             try {
                 const result = await apiCall('/api/profiles/select', {
@@ -2899,15 +3108,16 @@ INSERT INTO example VALUES (1);"></textarea>
                     body: JSON.stringify({ profile: profileId })
                 });
                 if (!result.ok) {
-                    showToast(result.error || '切り替えに失敗しました', 'error');
+                    showToast(result.error || 'Could not switch profile', 'error');
                     return;
                 }
-                showToast(`${label} (${result.schema}) に切り替えました`);
-                ER.model = null;   // スキーマが変わったので ER も作り直す
-                await Promise.all([loadProfiles(), loadTables(), loadCompletions()]);
+                showToast(`Switched to ${label} (${result.schema})`);
+                ER.model = null;   // the schema changed, so the ER diagram is rebuilt
                 currentTable = null;
+                renderTableNote(null);
+                await Promise.all([loadProfiles(), loadTables(), loadCompletions()]);
             } catch (e) {
-                showToast('切り替えに失敗しました', 'error');
+                showToast('Could not switch profile', 'error');
             } finally {
                 hideLoading();
             }
@@ -2916,13 +3126,13 @@ INSERT INTO example VALUES (1);"></textarea>
         /** Rebuild one profile's schema from the seed data. Destructive, but only that schema. */
         async function reloadProfile(profileId) {
             const p = (profileState.profiles || []).find(x => x.id === profileId);
-            const label = p ? (p.nameJa || p.name) : profileId;
+            const label = p ? p.name : profileId;
             const ok = await showConfirmDialog({
-                title: 'このスキーマを初期化しますか?',
-                body: `<b>${escapeHtml(label)}</b> (スキーマ ${escapeHtml(p ? p.schema : '')}) を初期データで作り直します。<br><br>` +
-                      'このスキーマのテーブルは <b>削除して再作成</b> されます。加えた変更は失われます。<br>' +
-                      '他のプロファイルには影響しません。',
-                okLabel: '初期化する',
+                title: 'Reset this schema?',
+                body: `<b>${escapeHtml(label)}</b> (schema ${escapeHtml(p ? p.schema : '')}) will be rebuilt from its seed data.<br><br>` +
+                      'Its tables are <b>dropped and recreated</b>, so any changes you made there are lost.<br>' +
+                      'Other profiles are not affected.',
+                okLabel: 'Reset',
                 icon: '\u26a0'
             });
             if (!ok) return;
@@ -2934,15 +3144,17 @@ INSERT INTO example VALUES (1);"></textarea>
                     body: JSON.stringify({ profile: profileId })
                 });
                 if (result.ok) {
-                    showToast(`${label}: ${result.totalRows} 行を再投入しました`);
+                    showToast(`${label}: reloaded ${result.totalRows} rows`);
                 } else {
                     const errs = (result.errors || [result.error]).slice(0, 3).join(' / ');
-                    showToast(`初期化でエラー: ${errs}`, 'error');
+                    showToast(`Reset finished with errors: ${errs}`, 'error');
                 }
-                ER.model = null;   // スキーマが変わったので ER も作り直す
+                ER.model = null;   // the schema changed, so the ER diagram is rebuilt
+                currentTable = null;
+                renderTableNote(null);
                 await Promise.all([loadProfiles(), loadTables(), loadCompletions()]);
             } catch (e) {
-                showToast('初期化に失敗しました', 'error');
+                showToast('Reset failed', 'error');
             } finally {
                 hideLoading();
             }
@@ -3081,9 +3293,9 @@ INSERT INTO example VALUES (1);"></textarea>
         }
 
         /**
-         * 全行を取り切る版。/queries は fetch-size で切って cursor-id を返すので、
-         * done になるまで /cursors/{id}/fetch を追う。メタデータ系のように
-         * 100 行を超える結果を扱うところで使う。
+         * Read every row. /queries cuts the result at fetch-size and hands back a
+         * cursor-id, so follow /cursors/{id}/fetch until done. Needed anywhere a result
+         * can exceed the 100-row default, such as the system-catalogue queries.
          */
         async function executeSQLAll(sql, fetchSize = 1000) {
             showLoading();
@@ -3243,7 +3455,7 @@ INSERT INTO example VALUES (1);"></textarea>
                 const offset = dataCurrentPage * dataPageSize;
                 const offsetClause = offset > 0 ? `OFFSET ${offset} ROWS ` : '';
                 const [schemaResult, countResult, dataResult] = await Promise.all([
-                    apiCall('/queries', { method: 'POST', body: JSON.stringify({ sql: `SELECT C.COLUMNNAME, C.COLUMNDATATYPE, C.COLUMNNUMBER, C.COLUMNDEFAULT FROM SYS.SYSCOLUMNS C JOIN SYS.SYSTABLES T ON C.REFERENCEID = T.TABLEID WHERE T.TABLENAME = '${upperName}' ORDER BY C.COLUMNNUMBER` }) }),
+                    apiCall('/queries', { method: 'POST', body: JSON.stringify({ sql: `SELECT C.COLUMNNAME, C.COLUMNDATATYPE, C.COLUMNNUMBER, C.COLUMNDEFAULT FROM SYS.SYSCOLUMNS C JOIN SYS.SYSTABLES T ON C.REFERENCEID = T.TABLEID JOIN SYS.SYSSCHEMAS S ON T.SCHEMAID = S.SCHEMAID WHERE S.SCHEMANAME = CURRENT SCHEMA AND T.TABLENAME = '${upperName}' ORDER BY C.COLUMNNUMBER` }) }),
                     apiCall('/queries', { method: 'POST', body: JSON.stringify({ sql: `SELECT COUNT(*) FROM ${tableName}` }) }),
                     apiCall('/queries', { method: 'POST', body: JSON.stringify({ sql: `SELECT * FROM ${tableName} ${offsetClause}FETCH FIRST ${dataPageSize} ROWS ONLY` }) })
                 ]);
@@ -3252,6 +3464,7 @@ INSERT INTO example VALUES (1);"></textarea>
                 if (countResult.rows && countResult.rows.length > 0) {
                     dataTotalRows = countResult.rows[0][0];
                 }
+                renderTableNote(tableName, dataTotalRows);
 
                 // DDL tab - schema table + hidden DDL text
                 const schemaContainer = document.getElementById('schemaTableContainer');
@@ -3773,6 +3986,7 @@ INSERT INTO example VALUES (1);"></textarea>
             });
         });
         erSetupInteractions();
+        setupAppearance();
 
         // Create Table modal tab switching (Form/DDL)
         document.querySelectorAll('#createTableTabs .sub-tab').forEach(tab => {

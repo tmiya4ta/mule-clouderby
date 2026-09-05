@@ -22,7 +22,7 @@ cd reference/mule/clouderby-mule-server
 JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 mvn clean package
 ```
 
-ビルド成果物: `target/mule-clouderby-1.16.0-mule-application.jar`
+ビルド成果物: `target/mule-clouderby-1.17.0-mule-application.jar`
 (名前は `pom.xml` の `artifactId` / `version` に従います)
 
 ### 実行
@@ -37,8 +37,8 @@ cp target/mule-clouderby-*-mule-application.jar ~/srv/mule-enterprise-standalone
 **CloudHub 2.0 (yc CLI):**
 
 ```bash
-yc deploy file <org> <env> <group> mule-clouderby 1.16.0 \
-  target/mule-clouderby-1.16.0-mule-application.jar target=ps:<private-space>
+yc deploy file <org> <env> <group> mule-clouderby 1.17.0 \
+  target/mule-clouderby-1.17.0-mule-application.jar target=ps:<private-space>
 ```
 
 ### 設定
@@ -170,7 +170,7 @@ curl -X POST http://localhost:8081/api/profiles/reload \
 
 | パス | メソッド | 説明 |
 |------|---------|------|
-| `/` | GET | 管理UI (`src/main/resources/static/index.html`)。Tables タブに Console / DDL / **ER** のサブタブ |
+| `/` | GET | 管理UI (`src/main/resources/static/index.html`)。Tables タブに Console / DDL / **ER** のサブタブ、ライト/ダークテーマ、UI 拡大縮小 (A− / A+、Ctrl+`+`/`-`/`0`) |
 | `/api/db/tables` | GET | 現在スキーマのテーブル一覧 (UI用、要セッション) |
 | `/api/completions` | GET | 現在スキーマのSQL補完候補 (UI用、要セッション) |
 | `/api/profiles` | GET | カタログ、各プロファイルの件数、このセッションが見ているスキーマ |

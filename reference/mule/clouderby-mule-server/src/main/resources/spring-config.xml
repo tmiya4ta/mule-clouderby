@@ -20,9 +20,9 @@
     <bean id="databaseInitializer" class="com.muledev.init.DatabaseInitializer" depends-on="clouderbyDataSource">
         <property name="dataSource" ref="clouderbyDataSource"/>
         <property name="sessionManager" ref="clouderbySessionManager"/>
-        <!-- 起動時に投入するデータセットプロファイル。未解決/空なら
-             システムプロパティ db.init.profile、次いで
-             /init/profiles.json の defaultProfile にフォールバックする -->
+        <!-- Dataset profile seeded at startup. If this resolves empty or is left as a
+             literal placeholder, the code falls back to the db.init.profile system
+             property and then to defaultProfile in /init/profiles.json -->
         <property name="defaultProfile" value="${db.init.profile}"/>
     </bean>
 
