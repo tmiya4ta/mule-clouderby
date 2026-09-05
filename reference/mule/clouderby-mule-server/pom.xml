@@ -6,7 +6,7 @@
 
     <groupId>io.gitlab.myst3m</groupId>
     <artifactId>mule-clouderby</artifactId>
-    <version>1.13.0</version>
+    <version>1.13.1</version>
     <packaging>mule-application</packaging>
 
     <name>mule-clouderby</name>

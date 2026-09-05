@@ -706,17 +706,19 @@ output application/json
     </flow>
 
     <!-- POST /api/profiles/apply  { "profile": "finance" } -->
-    <!-- Drops every table, recreates the profile schema and reloads its seed data. -->
-    <!-- Every open clouderby session is closed first; clients must reconnect.      -->
+    <!-- Drops every table, recreates the profile schema and reloads its seed data.  -->
+    <!-- Destructive, so it requires a valid X-Clouderby-Session-Id (enforced inside -->
+    <!-- ProfileManager.apply). Every open session is then closed; clients reconnect.-->
     <flow name="profiles-apply-flow">
         <http:listener doc:name="POST /api/profiles/apply" config-ref="HTTP_Listener_config" path="/api/profiles/apply" allowedMethods="POST">
             <http:response statusCode="#[vars.httpStatus default 200]"/>
         </http:listener>
         <set-variable variableName="requestedProfile" value="#[payload.profile default '']" doc:name="Requested profile"/>
-        <java:invoke-static class="com.muledev.init.ProfileManager" method="apply(String)">
-            <java:args>#[{profileId: vars.requestedProfile as String}]</java:args>
+        <set-variable variableName="sessionId" value="#[attributes.headers.'x-clouderby-session-id' default '']" doc:name="Session id"/>
+        <java:invoke-static class="com.muledev.init.ProfileManager" method="apply(String,String)">
+            <java:args>#[{profileId: vars.requestedProfile as String, sessionId: vars.sessionId as String}]</java:args>
         </java:invoke-static>
-        <set-variable variableName="httpStatus" value="#[if (payload.ok == true) 200 else 500]" doc:name="Status"/>
+        <set-variable variableName="httpStatus" value="#[payload.status default (if (payload.ok == true) 200 else 500)]" doc:name="Status"/>
         <set-payload value="#[payload]" mimeType="application/json"/>
         <error-handler ref="global-error-handler"/>
     </flow>

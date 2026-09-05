@@ -67,7 +67,7 @@ public class DatabaseInitializer implements InitializingBean {
 
         try {
             LOG.info("[DB-INIT] Applying profile '{}' ...", profile);
-            Map<String, Object> r = ProfileManager.apply(profile);
+            Map<String, Object> r = ProfileManager.applyInternal(profile);
             LOG.info("[DB-INIT] Profile '{}' applied: {} rows, ok={}",
                      profile, r.get("totalRows"), r.get("ok"));
             if (Boolean.FALSE.equals(r.get("ok"))) {
@@ -84,6 +84,7 @@ public class DatabaseInitializer implements InitializingBean {
      */
     private String resolveProfile() {
         String p = defaultProfile;
+        LOG.info("[DB-INIT] db.init.profile injected as: {}", p);
         if (p == null || p.trim().isEmpty() || p.startsWith("${")) {
             p = System.getProperty("db.init.profile");
         }

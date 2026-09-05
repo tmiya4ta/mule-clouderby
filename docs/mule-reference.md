@@ -26,7 +26,7 @@ cd reference/mule/clouderby-mule-server
 JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 mvn clean package
 ```
 
-ビルド成果物: `target/mule-clouderby-1.13.0-mule-application.jar`
+ビルド成果物: `target/mule-clouderby-1.13.1-mule-application.jar`
 (名前は `pom.xml` の `artifactId` / `version` に従います)
 
 モデルなしでもビルドは通り、SQLのパスはすべて動作します。その場合 `/vectors/*` を呼んだときだけ実行時エラーになります。
@@ -43,8 +43,8 @@ cp target/mule-clouderby-*-mule-application.jar ~/srv/mule-enterprise-standalone
 **CloudHub 2.0 (yc CLI):**
 
 ```bash
-yc deploy file <org> <env> <group> mule-clouderby 1.13.0 \
-  target/mule-clouderby-1.13.0-mule-application.jar target=ps:<private-space>
+yc deploy file <org> <env> <group> mule-clouderby 1.13.1 \
+  target/mule-clouderby-1.13.1-mule-application.jar target=ps:<private-space>
 ```
 
 ### 設定

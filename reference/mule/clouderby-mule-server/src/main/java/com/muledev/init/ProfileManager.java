@@ -137,13 +137,36 @@ public class ProfileManager {
      * <p>Unlike the startup path this never swallows a failure: per-table
      * outcomes are returned and {@code ok} is false if anything went wrong.
      */
-    public static synchronized Map<String, Object> apply(String profileId) throws Exception {
+    public static Map<String, Object> apply(String profileId, String sessionId) throws Exception {
+        // This drops every table, so it is gated on a valid clouderby session --
+        // the same bar as any other write path. The check lives here, next to the
+        // destructive work, rather than as a flow-ref that an XML edit could drop.
+        if (sessionManager != null && sessionManager.getSession(nullToEmpty(sessionId)) == null) {
+            Map<String, Object> denied = new LinkedHashMap<>();
+            denied.put("ok", false);
+            denied.put("status", 401);
+            denied.put("error", "A valid X-Clouderby-Session-Id is required to apply a profile");
+            return denied;
+        }
+        return applyInternal(profileId);
+    }
+
+    /**
+     * The unauthenticated path, for startup seeding.
+     *
+     * <p>Package-private on purpose: {@code java:invoke-static} can only reach
+     * public methods, so no Mule flow can call this and skip the session check.
+     */
+    static synchronized Map<String, Object> applyInternal(String profileId) throws Exception {
         List<String> tables = tablesOf(profileId);   // throws on unknown id
 
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("profile", profileId);
+        result.put("status", 200);
         List<String> errors = new ArrayList<>();
 
+        // The caller's own session goes too: after the swap its cached
+        // PreparedStatements point at tables that no longer exist.
         int closed = sessionManager == null ? 0 : sessionManager.closeAllSessions();
         result.put("sessionsClosed", closed);
 
@@ -446,6 +469,10 @@ public class ProfileManager {
         Matcher item = Pattern.compile("\"([^\"]+)\"").matcher(m.group(1));
         while (item.find()) out.add(item.group(1));
         return out;
+    }
+
+    private static String nullToEmpty(String s) {
+        return s == null ? "" : s;
     }
 
     private static String firstLine(String sql) {
