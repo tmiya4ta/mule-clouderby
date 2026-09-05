@@ -13,23 +13,17 @@ clouderbyプロトコルのMuleSoft Mule 4による実装です。サーバー�
 ## サーバー (clouderby-mule-server)
 
 **Apache Derby (埋め込み)** をバックエンドとするclouderbyプロトコルサーバーです。
-起動時にデータセットプロファイル (スキーマ + 初期データ) を投入し、Webの管理UIとベクトル検索も同梱しています。
+起動時にデータセットプロファイル (スキーマ + 初期データ) を投入し、Webの管理UIも同梱しています。
 
 ### ビルド
 
-ベクトル検索用のONNXモデル (約118MB) はGitHubの100MB制限を超えるためコミットされていません。
-**ビルド前に一度だけ**取得してください。
-
 ```bash
 cd reference/mule/clouderby-mule-server
-./download-model.sh                                              # src/main/resources/model/e5-small.onnx を取得
 JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 mvn clean package
 ```
 
-ビルド成果物: `target/mule-clouderby-1.13.1-mule-application.jar`
+ビルド成果物: `target/mule-clouderby-1.14.0-mule-application.jar`
 (名前は `pom.xml` の `artifactId` / `version` に従います)
-
-モデルなしでもビルドは通り、SQLのパスはすべて動作します。その場合 `/vectors/*` を呼んだときだけ実行時エラーになります。
 
 ### 実行
 
@@ -43,8 +37,8 @@ cp target/mule-clouderby-*-mule-application.jar ~/srv/mule-enterprise-standalone
 **CloudHub 2.0 (yc CLI):**
 
 ```bash
-yc deploy file <org> <env> <group> mule-clouderby 1.13.1 \
-  target/mule-clouderby-1.13.1-mule-application.jar target=ps:<private-space>
+yc deploy file <org> <env> <group> mule-clouderby 1.14.0 \
+  target/mule-clouderby-1.14.0-mule-application.jar target=ps:<private-space>
 ```
 
 ### 設定
@@ -139,7 +133,6 @@ JDBCクライアントは再接続してください。レスポンスの `sessi
 | `/api/completions` | GET | SQL補完候補 (UI用) |
 | `/api/profiles` | GET | プロファイルのカタログと現在の状態 |
 | `/api/profiles/apply` | POST | プロファイルの適用 |
-| `/vectors/upsert` \| `/search` \| `/clear` | POST | ANNベクトル検索 (Lucene HNSW + ONNX) |
 
 ### 動作確認
 
@@ -209,7 +202,6 @@ clouderby:
 ```bash
 # 1. サーバービルド・起動
 cd reference/mule/clouderby-mule-server
-./download-model.sh
 JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 mvn clean package
 cp target/*.jar ~/srv/mule-enterprise-standalone-4.10.1/apps/
 
@@ -237,7 +229,6 @@ reference/mule/
 ├── clouderby-mule-server/            # サーバー実装
 │   ├── pom.xml
 │   ├── mule-artifact.json
-│   ├── download-model.sh             # ONNXモデル取得 (ビルド前に一度)
 │   ├── tools/
 │   │   └── gen_finance_data.py       # finance プロファイルのCSV生成
 │   └── src/main/
@@ -246,13 +237,9 @@ reference/mule/
 │       │   │   ├── DatabaseInitializer.java   # 起動時のプロファイル投入
 │       │   │   ├── ProfileManager.java        # プロファイルの列挙・適用
 │       │   │   └── SqlExecutorInitializer.java
-│       │   ├── server/
-│       │   │   ├── SqlExecutor.java           # フローから呼ぶ静的SQLメソッド
-│       │   │   └── ClouderbySessionManager.java
-│       │   └── vec/
-│       │       ├── OnnxEmbedder.java          # multilingual-e5-small
-│       │       ├── SentencePieceUnigram.java
-│       │       └── VectorIndex.java           # Lucene HNSW
+│       │   └── server/
+│       │       ├── SqlExecutor.java           # フローから呼ぶ静的SQLメソッド
+│       │       └── ClouderbySessionManager.java
 │       ├── mule/
 │       │   ├── api-implementation.xml
 │       │   └── global-config.xml
@@ -260,7 +247,6 @@ reference/mule/
 │           ├── api/clouderby-api.yaml
 │           ├── config/
 │           ├── init/                          # データセットプロファイル
-│           ├── model/                         # e5_vocab.tsv (+ 取得したONNX)
 │           ├── spring-config.xml
 │           └── static/index.html              # 管理UI
 │

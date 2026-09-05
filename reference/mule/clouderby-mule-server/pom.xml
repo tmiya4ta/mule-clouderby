@@ -6,7 +6,7 @@
 
     <groupId>io.gitlab.myst3m</groupId>
     <artifactId>mule-clouderby</artifactId>
-    <version>1.13.1</version>
+    <version>1.14.0</version>
     <packaging>mule-application</packaging>
 
     <name>mule-clouderby</name>
@@ -185,19 +185,7 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- Lucene HNSW: in-JVM ANN vector index (pure Java, no native deps). 9.x supports Java 17. -->
-        <dependency>
-            <groupId>org.apache.lucene</groupId>
-            <artifactId>lucene-core</artifactId>
-            <version>9.12.0</version>
-        </dependency>
 
-        <!-- ONNX Runtime: in-JVM inference for the bundled MiniLM sentence-embedding model. -->
-        <dependency>
-            <groupId>com.microsoft.onnxruntime</groupId>
-            <artifactId>onnxruntime</artifactId>
-            <version>1.19.2</version>
-        </dependency>
     </dependencies>
 
     <repositories>

@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 """
 material_search.py — Semantic material/product search over clouderby's
-manufacturing data, using the server's built-in vector index.
+manufacturing data, combining a vector index with clouderby SQL.
+
+NOTE: clouderby no longer ships a vector index. It is a plain JDBC-over-HTTP
+server over Derby. Point VECTOR_URL at your own vector service exposing
+POST /vectors/upsert {id, content} and POST /vectors/search {q, k} -> {hits}.
 
 What this demonstrates
 ----------------------
@@ -33,7 +37,8 @@ Usage
     python material_search.py demo
 
 Only the Python standard library is used, so it runs with no pip install.
-Set CLOUDERBY_URL / CLOUDERBY_USER / CLOUDERBY_PASSWORD to override defaults.
+Set CLOUDERBY_URL / CLOUDERBY_USER / CLOUDERBY_PASSWORD to override defaults,
+and VECTOR_URL to point at the vector service.
 """
 
 import json
@@ -66,8 +71,10 @@ JP_EN = {
 # clouderby HTTP helpers
 # ----------------------------------------------------------------------------
 def _post(path, body, headers=None):
+    """POST to `path` on the clouderby server, or to an absolute URL as given."""
+    url = path if path.startswith("http") else BASE + path
     data = json.dumps(body).encode("utf-8")
-    req = urllib.request.Request(BASE + path, data=data, method="POST")
+    req = urllib.request.Request(url, data=data, method="POST")
     req.add_header("Content-Type", "application/json")
     for k, v in (headers or {}).items():
         req.add_header(k, v)
@@ -92,12 +99,22 @@ def sql(sid, statement, fetch_size=500):
     return [dict(zip(cols, row)) for row in r.get("rows", [])]
 
 
+def _vector_base():
+    url = os.environ.get("VECTOR_URL")
+    if not url:
+        raise SystemExit(
+            "VECTOR_URL is not set. clouderby itself has no vector index -- point\n"
+            "VECTOR_URL at a service exposing POST /vectors/upsert and /vectors/search."
+        )
+    return url.rstrip("/")
+
+
 def vsearch(query, k=5):
-    return _post("/vectors/search", {"q": query, "k": k}).get("hits", [])
+    return _post(_vector_base() + "/vectors/search", {"q": query, "k": k}).get("hits", [])
 
 
 def vupsert(doc_id, content):
-    _post("/vectors/upsert", {"id": doc_id, "content": content})
+    _post(_vector_base() + "/vectors/upsert", {"id": doc_id, "content": content})
 
 
 # ----------------------------------------------------------------------------

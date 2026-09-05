@@ -1,5 +1,11 @@
 # material-search — Vector search over clouderby's manufacturing data
 
+> **Note:** clouderby no longer ships a vector index — it is a plain
+> JDBC-over-HTTP server over Apache Derby. This example still shows the pattern,
+> but you must point `VECTOR_URL` at your own vector service exposing
+> `POST /vectors/upsert {id, content}` and `POST /vectors/search {q, k} -> {hits}`.
+> `CLOUDERBY_URL` still points at clouderby for the SQL half.
+
 A small, runnable example showing **how a vector index earns its keep on the
 materials-maker dataset that clouderby ships by default** — and, just as
 importantly, where it stops and SQL (or an LLM) takes over.

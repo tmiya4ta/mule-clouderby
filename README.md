@@ -150,7 +150,7 @@ implementations use different ones.
 
 | Implementation | Backend | Notes |
 |----------------|---------|-------|
-| [MuleSoft Mule 4](docs/mule-reference.en.md) | Apache Derby (embedded) | Server & client, with an admin UI, dataset profiles and vector search |
+| [MuleSoft Mule 4](docs/mule-reference.en.md) | Apache Derby (embedded) | Server & client, with an admin UI and dataset profiles |
 | [Clojure](docs/clojure-reference.en.md) | SQLite | Server & CLI client |
 
 ### Dataset profiles (Mule server)
@@ -177,9 +177,8 @@ JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 mvn clean install
 ```
 
 ```bash
-# Mule server (fetch the ONNX model for vector search once, before building)
+# Mule server
 cd reference/mule/clouderby-mule-server
-./download-model.sh
 JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 mvn clean package
 ```
 

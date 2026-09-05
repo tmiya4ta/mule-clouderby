@@ -149,7 +149,7 @@ clouderby/
 
 | 実装 | バックエンド | 備考 |
 |------|-------------|------|
-| [MuleSoft Mule 4](docs/mule-reference.md) | Apache Derby (埋め込み) | サーバー・クライアント。管理UI、データセットプロファイル、ベクトル検索つき |
+| [MuleSoft Mule 4](docs/mule-reference.md) | Apache Derby (埋め込み) | サーバー・クライアント。管理UI、データセットプロファイルつき |
 | [Clojure](docs/clojure-reference.md) | SQLite | サーバー・CLIクライアント |
 
 ### データセットプロファイル (Mule サーバー)
@@ -175,9 +175,8 @@ JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 mvn clean install
 ```
 
 ```bash
-# Mule サーバー (ベクトル検索用ONNXモデルはビルド前に一度だけ取得)
+# Mule サーバー
 cd reference/mule/clouderby-mule-server
-./download-model.sh
 JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 mvn clean package
 ```
 

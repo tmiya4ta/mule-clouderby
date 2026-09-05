@@ -13,24 +13,17 @@ The clouderby protocol implemented on MuleSoft Mule 4, as two applications: a se
 ## Server (clouderby-mule-server)
 
 A clouderby protocol server backed by **Apache Derby (embedded)**. It seeds a dataset
-profile (schema + sample data) on startup and also ships a web admin UI and vector search.
+profile (schema + sample data) on startup and also ships a web admin UI.
 
 ### Build
 
-The ONNX model used for vector search (~118MB) exceeds GitHub's 100MB file limit and is
-not committed. Fetch it **once before building**.
-
 ```bash
 cd reference/mule/clouderby-mule-server
-./download-model.sh                                              # fetches src/main/resources/model/e5-small.onnx
 JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 mvn clean package
 ```
 
-Artifact: `target/mule-clouderby-1.13.1-mule-application.jar`
+Artifact: `target/mule-clouderby-1.14.0-mule-application.jar`
 (the name follows `artifactId` / `version` in `pom.xml`)
-
-The build succeeds without the model and every SQL path still works; only `/vectors/*`
-fails, at call time.
 
 ### Run
 
@@ -44,8 +37,8 @@ cp target/mule-clouderby-*-mule-application.jar ~/srv/mule-enterprise-standalone
 **CloudHub 2.0 (yc CLI):**
 
 ```bash
-yc deploy file <org> <env> <group> mule-clouderby 1.13.1 \
-  target/mule-clouderby-1.13.1-mule-application.jar target=ps:<private-space>
+yc deploy file <org> <env> <group> mule-clouderby 1.14.0 \
+  target/mule-clouderby-1.14.0-mule-application.jar target=ps:<private-space>
 ```
 
 ### Configuration
@@ -140,7 +133,6 @@ To add a profile, create `profiles/<id>/` and add its id to the `profiles` array
 | `/api/completions` | GET | SQL completion candidates (for the UI) |
 | `/api/profiles` | GET | Profile catalog and current state |
 | `/api/profiles/apply` | POST | Apply a profile |
-| `/vectors/upsert` \| `/search` \| `/clear` | POST | ANN vector search (Lucene HNSW + ONNX) |
 
 ### Smoke test
 
@@ -210,7 +202,6 @@ The client points the DB Connector's generic-connection at the clouderby JDBC dr
 ```bash
 # 1. Build and deploy the server
 cd reference/mule/clouderby-mule-server
-./download-model.sh
 JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 mvn clean package
 cp target/*.jar ~/srv/mule-enterprise-standalone-4.10.1/apps/
 
@@ -238,7 +229,6 @@ reference/mule/
 ├── clouderby-mule-server/            # server implementation
 │   ├── pom.xml
 │   ├── mule-artifact.json
-│   ├── download-model.sh             # fetch the ONNX model (once, before building)
 │   ├── tools/
 │   │   └── gen_finance_data.py       # generates the finance profile CSVs
 │   └── src/main/
@@ -247,13 +237,9 @@ reference/mule/
 │       │   │   ├── DatabaseInitializer.java   # seeds a profile on startup
 │       │   │   ├── ProfileManager.java        # lists and applies profiles
 │       │   │   └── SqlExecutorInitializer.java
-│       │   ├── server/
-│       │   │   ├── SqlExecutor.java           # static SQL methods called from flows
-│       │   │   └── ClouderbySessionManager.java
-│       │   └── vec/
-│       │       ├── OnnxEmbedder.java          # multilingual-e5-small
-│       │       ├── SentencePieceUnigram.java
-│       │       └── VectorIndex.java           # Lucene HNSW
+│       │   └── server/
+│       │       ├── SqlExecutor.java           # static SQL methods called from flows
+│       │       └── ClouderbySessionManager.java
 │       ├── mule/
 │       │   ├── api-implementation.xml
 │       │   └── global-config.xml
@@ -261,7 +247,6 @@ reference/mule/
 │           ├── api/clouderby-api.yaml
 │           ├── config/
 │           ├── init/                          # dataset profiles
-│           ├── model/                         # e5_vocab.tsv (+ the fetched ONNX)
 │           ├── spring-config.xml
 │           └── static/index.html              # admin UI
 │
