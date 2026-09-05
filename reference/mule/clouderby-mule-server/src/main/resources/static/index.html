@@ -302,6 +302,134 @@
             align-items: center;
         }
 
+        /* ---- Dataset profiles ---- */
+        .profiles-panel {
+            padding: 1.5rem;
+            overflow-y: auto;
+            height: 100%;
+        }
+        .profiles-intro {
+            margin-bottom: 1.5rem;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            line-height: 1.7;
+            max-width: 62rem;
+        }
+        .profiles-intro strong { color: var(--text-primary); }
+        .profiles-current {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.35rem 0.75rem;
+            margin-bottom: 1.25rem;
+            border: 1px solid var(--border-bright);
+            border-radius: 999px;
+            background: var(--bg-tertiary);
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--text-primary);
+        }
+        .profiles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(21rem, 1fr));
+            gap: 1.25rem;
+            max-width: 62rem;
+        }
+        .profile-card {
+            border: 1px solid var(--border);
+            border-radius: 0.6rem;
+            background: var(--bg-secondary);
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+        .profile-card:hover { border-color: var(--border-bright); }
+        .profile-card.is-current {
+            border-color: var(--accent-dim);
+            box-shadow: 0 0 0 1px var(--accent-glow);
+        }
+        .profile-card-head {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+        .profile-icon { font-size: 1.75rem; line-height: 1; }
+        .profile-name {
+            font-family: var(--font-display);
+            font-size: 1.05rem;
+            color: var(--text-primary);
+        }
+        .profile-name-en {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+        .profile-badge {
+            margin-left: auto;
+            padding: 0.15rem 0.55rem;
+            border-radius: 999px;
+            font-size: 0.68rem;
+            font-family: var(--font-mono);
+            background: var(--accent-glow);
+            color: var(--accent);
+            white-space: nowrap;
+        }
+        .profile-desc {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            line-height: 1.65;
+        }
+        .profile-domains {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+        }
+        .profile-domain {
+            padding: 0.15rem 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: 0.3rem;
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            background: var(--bg-tertiary);
+        }
+        .profile-domain b { color: var(--accent); font-weight: 500; }
+        .profile-stats {
+            display: flex;
+            gap: 1.25rem;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        .profile-stats b { color: var(--text-primary); font-weight: 500; }
+        .profile-actions { margin-top: auto; padding-top: 0.25rem; }
+        .profile-tables {
+            margin-top: 1.75rem;
+            max-width: 62rem;
+        }
+        .profile-tables-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+            gap: 0.3rem;
+        }
+        .profile-table-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 0.75rem;
+            padding: 0.3rem 0.6rem;
+            border: 1px solid var(--border);
+            border-radius: 0.3rem;
+            background: var(--bg-secondary);
+            font-family: var(--font-mono);
+            font-size: 0.73rem;
+        }
+        .profile-table-row span:first-child { color: var(--text-secondary); }
+        .profile-table-row span:last-child { color: var(--text-primary); }
+
         .nav-tabs {
             display: flex;
             gap: 0.25rem;
@@ -1435,6 +1563,7 @@
                 <nav class="nav-tabs">
                     <button class="nav-tab active" data-panel="tables">Tables</button>
                     <button class="nav-tab" data-panel="dataload">Data Load</button>
+                    <button class="nav-tab" data-panel="profiles">Profiles</button>
                 </nav>
             </div>
             <div class="header-right">
@@ -1547,6 +1676,20 @@
             </div>
 
             <!-- Data Load Panel -->
+            <!-- Dataset profiles -->
+            <div class="panel" id="panel-profiles">
+                <div class="profiles-panel">
+                    <div class="profiles-intro">
+                        データセットプロファイルは <strong>スキーマ + 初期データ</strong> をひとまとめにしたものです。
+                        適用するとデータベース上のテーブルはすべて削除され、選んだプロファイルの DDL と CSV で作り直されます。
+                        <strong>開いている clouderby セッションはすべて閉じられる</strong>ため、JDBC クライアントは再接続が必要です。
+                    </div>
+                    <div class="profiles-current" id="profilesCurrent">読み込み中...</div>
+                    <div class="profiles-grid" id="profilesGrid"></div>
+                    <div class="profile-tables" id="profileTables"></div>
+                </div>
+            </div>
+
             <div class="panel" id="panel-dataload">
                 <div class="data-load-panel">
                     <div class="section">
@@ -1790,6 +1933,9 @@ INSERT INTO example VALUES (1);"></textarea>
         let sessionId = null;
         let currentTable = null;
         let currentUser = null;
+        // プロファイル適用でサーバ側がセッションを閉じるため、張り直しに使う
+        let currentCreds = null;
+        let profileState = null;
 
         // Data tab pagination state
         let dataPageSize = 20;
@@ -2110,6 +2256,139 @@ INSERT INTO example VALUES (1);"></textarea>
             textarea.focus();
         }
 
+        // ============================================
+        // Dataset profiles
+        // ============================================
+
+        function escapeHtml(v) {
+            return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            })[c]);
+        }
+
+        async function loadProfiles() {
+            const grid = document.getElementById('profilesGrid');
+            try {
+                profileState = await apiCall('/api/profiles');
+                renderProfiles();
+            } catch (e) {
+                grid.innerHTML = '';
+                document.getElementById('profilesCurrent').textContent =
+                    'プロファイル情報を取得できませんでした';
+                showToast('Failed to load profiles', 'error');
+            }
+        }
+
+        function renderProfiles() {
+            if (!profileState) return;
+            const current = profileState.current;
+            const badge = document.getElementById('profilesCurrent');
+            const cur = (profileState.profiles || []).find(p => p.id === current);
+            badge.innerHTML = current
+                ? `\u25cf 現在のプロファイル: <b>${escapeHtml(cur ? cur.nameJa : current)}</b> ` +
+                  `<span style="color:var(--text-muted)">(${escapeHtml(current)})</span>`
+                : '\u25cb プロファイル未適用';
+
+            document.getElementById('profilesGrid').innerHTML =
+                (profileState.profiles || []).map(p => {
+                    const isCurrent = p.id === current;
+                    const domains = (p.domains || []).map(d =>
+                        `<span class="profile-domain"><b>${escapeHtml(d.prefix)}</b> ${escapeHtml(d.nameJa || d.name)}</span>`
+                    ).join('');
+                    return `
+                    <div class="profile-card ${isCurrent ? 'is-current' : ''}">
+                        <div class="profile-card-head">
+                            <div class="profile-icon">${escapeHtml(p.icon || '\u{1F4E6}')}</div>
+                            <div>
+                                <div class="profile-name">${escapeHtml(p.nameJa || p.name)}</div>
+                                <div class="profile-name-en">${escapeHtml(p.name)}</div>
+                            </div>
+                            ${isCurrent ? '<div class="profile-badge">LOADED</div>' : ''}
+                        </div>
+                        <div class="profile-desc">${escapeHtml(p.descriptionJa || p.description)}</div>
+                        <div class="profile-domains">${domains}</div>
+                        <div class="profile-stats">
+                            <span>テーブル <b>${p.tableCount}</b></span>
+                            <span>ドメイン <b>${(p.domains || []).length}</b></span>
+                        </div>
+                        <div class="profile-actions">
+                            <button class="action-btn ${isCurrent ? '' : 'primary'}"
+                                    data-apply-profile="${escapeHtml(p.id)}"
+                                    ${isCurrent ? '' : ''}>
+                                ${isCurrent ? '\u21bb 再投入' : '\u25b6 このプロファイルを適用'}
+                            </button>
+                        </div>
+                    </div>`;
+                }).join('');
+
+            const tables = profileState.tables || [];
+            document.getElementById('profileTables').innerHTML = tables.length ? `
+                <div class="section-title">現在のテーブルと件数 (${tables.length})</div>
+                <div class="profile-tables-grid">
+                    ${tables.map(t => `<div class="profile-table-row">
+                        <span>${escapeHtml(t.table)}</span><span>${t.rows}</span>
+                    </div>`).join('')}
+                </div>` : '';
+
+            document.querySelectorAll('[data-apply-profile]').forEach(btn => {
+                btn.addEventListener('click', () => applyProfile(btn.dataset.applyProfile));
+            });
+        }
+
+        async function applyProfile(profileId) {
+            const p = (profileState.profiles || []).find(x => x.id === profileId);
+            const label = p ? (p.nameJa || p.name) : profileId;
+            const ok = await showConfirmDialog({
+                title: 'プロファイルを適用しますか?',
+                body: `<b>${escapeHtml(label)}</b> を適用します。<br><br>` +
+                      '現在のテーブルはすべて <b>削除</b> され、このプロファイルの ' +
+                      'スキーマと初期データで作り直されます。<br>' +
+                      '開いている clouderby セッションはすべて閉じられます。',
+                okLabel: '適用する',
+                icon: '\u26a0'
+            });
+            if (!ok) return;
+
+            showLoading();
+            try {
+                const result = await apiCall('/api/profiles/apply', {
+                    method: 'POST',
+                    body: JSON.stringify({ profile: profileId })
+                });
+
+                // サーバがこのセッションも閉じているので張り直す
+                await reconnectSession();
+
+                if (result.ok) {
+                    showToast(`${label}: ${result.totalRows} 行を投入しました`);
+                } else {
+                    const errs = (result.errors || []).slice(0, 3).join(' / ');
+                    showToast(`適用は完了しましたがエラーがあります: ${errs}`, 'error');
+                }
+                await Promise.all([loadProfiles(), loadTables(), loadCompletions()]);
+            } catch (e) {
+                showToast('プロファイルの適用に失敗しました', 'error');
+                await reconnectSession();
+            } finally {
+                hideLoading();
+            }
+        }
+
+        /** Re-create the clouderby session the server closed during a profile switch. */
+        async function reconnectSession() {
+            if (!currentCreds) return;
+            sessionId = null;
+            try {
+                const r = await apiCall('/sessions', {
+                    method: 'POST',
+                    body: JSON.stringify(currentCreds)
+                });
+                if (r && r['session-id']) sessionId = r['session-id'];
+            } catch (e) {
+                showToast('セッションを張り直せませんでした。再ログインしてください', 'error');
+            }
+        }
+
         // Authentication
         async function login(username, password) {
             showLoading();
@@ -2130,6 +2409,7 @@ INSERT INTO example VALUES (1);"></textarea>
                     throw new Error('No session ID received');
                 }
                 currentUser = username;
+                currentCreds = { user: username, password: password };
 
                 loginScreen.classList.add('hidden');
                 appContainer.classList.add('active');
@@ -2152,6 +2432,7 @@ INSERT INTO example VALUES (1);"></textarea>
                 } catch (e) {}
             }
             sessionId = null;
+            currentCreds = null;
             appContainer.classList.remove('active');
             loginScreen.classList.remove('hidden');
             document.getElementById('username').value = '';
@@ -2884,6 +3165,7 @@ INSERT INTO example VALUES (1);"></textarea>
                 document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
                 tab.classList.add('active');
                 document.getElementById(`panel-${tab.dataset.panel}`).classList.add('active');
+                if (tab.dataset.panel === 'profiles') loadProfiles();
             });
         });
 

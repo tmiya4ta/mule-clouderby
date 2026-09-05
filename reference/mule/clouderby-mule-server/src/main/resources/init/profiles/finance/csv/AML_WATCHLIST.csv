@@ -1,0 +1,21 @@
+WATCHLIST_ID,LIST_NAME,ENTITY_NAME,ENTITY_TYPE,COUNTRY,LISTED_DATE,REFERENCE,NOTES
+1,国内 PEP リスト,SANCTIONED ENTITY 01 LTD,ENTITY,XX,2014-07-19,REF-57533,テスト用のダミーデータ。実在の個人・団体とは無関係。
+2,EU Consolidated,DOE JOHN 02,INDIVIDUAL,XX,2020-06-01,REF-74773,テスト用のダミーデータ。実在の個人・団体とは無関係。
+3,国連安保理制裁リスト,SANCTIONED ENTITY 03 LTD,ENTITY,SY,2016-11-01,REF-70313,テスト用のダミーデータ。実在の個人・団体とは無関係。
+4,国内 PEP リスト,MV WATCHED VESSEL 04,VESSEL,JP,2024-05-23,REF-41382,テスト用のダミーデータ。実在の個人・団体とは無関係。
+5,国連安保理制裁リスト,DOE JOHN 05,INDIVIDUAL,JP,2019-04-27,REF-72271,テスト用のダミーデータ。実在の個人・団体とは無関係。
+6,OFAC SDN,MV WATCHED VESSEL 06,VESSEL,IR,2014-08-05,REF-64982,テスト用のダミーデータ。実在の個人・団体とは無関係。
+7,国内 PEP リスト,DOE JOHN 07,INDIVIDUAL,IR,2020-05-09,REF-74045,テスト用のダミーデータ。実在の個人・団体とは無関係。
+8,国連安保理制裁リスト,MV WATCHED VESSEL 08,VESSEL,KP,2017-03-15,REF-11110,テスト用のダミーデータ。実在の個人・団体とは無関係。
+9,EU Consolidated,MV WATCHED VESSEL 09,VESSEL,CU,2022-06-10,REF-86188,テスト用のダミーデータ。実在の個人・団体とは無関係。
+10,OFAC SDN,SANCTIONED ENTITY 10 LTD,ENTITY,RU,2014-08-13,REF-17306,テスト用のダミーデータ。実在の個人・団体とは無関係。
+11,EU Consolidated,SANCTIONED ENTITY 11 LTD,ENTITY,XX,2016-11-18,REF-72254,テスト用のダミーデータ。実在の個人・団体とは無関係。
+12,国連安保理制裁リスト,DOE JOHN 12,INDIVIDUAL,JP,2021-05-05,REF-97733,テスト用のダミーデータ。実在の個人・団体とは無関係。
+13,国連安保理制裁リスト,MV WATCHED VESSEL 13,VESSEL,SY,2025-05-01,REF-39110,テスト用のダミーデータ。実在の個人・団体とは無関係。
+14,国内 PEP リスト,MV WATCHED VESSEL 14,VESSEL,RU,2020-05-20,REF-67780,テスト用のダミーデータ。実在の個人・団体とは無関係。
+15,EU Consolidated,MV WATCHED VESSEL 15,VESSEL,CU,2016-01-22,REF-15153,テスト用のダミーデータ。実在の個人・団体とは無関係。
+16,国連安保理制裁リスト,DOE JOHN 16,INDIVIDUAL,KP,2014-01-01,REF-65073,テスト用のダミーデータ。実在の個人・団体とは無関係。
+17,国内 PEP リスト,DOE JOHN 17,INDIVIDUAL,KP,2022-06-21,REF-37082,テスト用のダミーデータ。実在の個人・団体とは無関係。
+18,内部要注意先,SANCTIONED ENTITY 18 LTD,ENTITY,SY,2024-06-28,REF-50808,テスト用のダミーデータ。実在の個人・団体とは無関係。
+19,OFAC SDN,SANCTIONED ENTITY 19 LTD,ENTITY,JP,2022-05-04,REF-78056,テスト用のダミーデータ。実在の個人・団体とは無関係。
+20,国内 PEP リスト,DOE JOHN 20,INDIVIDUAL,CU,2025-06-04,REF-93017,テスト用のダミーデータ。実在の個人・団体とは無関係。

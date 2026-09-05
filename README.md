@@ -130,23 +130,41 @@ clouderby/
 │   └── clouderby-api.yaml
 │
 ├── jdbc-driver/              # JDBC driver implementation
-│   └── src/main/java/com/muledev/
+│   └── src/main/java/io/gitlab/myst3m/clouderby/jdbc/
 │
 ├── reference/                # Reference implementations
 │   ├── mule/                 # MuleSoft Mule 4
-│   │   ├── clouderby-mule-app/      # Server
+│   │   ├── clouderby-mule-server/   # Server (embedded Apache Derby)
 │   │   └── clouderby-mule-client/   # Client
 │   └── clj/                  # Clojure
-│       ├── clouderby-clj-server/    # Server
-│       └── clj-client/           # CLI client
+│       ├── clouderby-clj-server/    # Server (SQLite)
+│       └── clj-client/              # CLI client
 │
 └── docs/                     # Documentation
 ```
 
 ## Reference Implementations
 
-- [MuleSoft Mule 4](docs/mule-reference.en.md) - Server & Client
-- [Clojure](docs/clojure-reference.en.md) - Server & CLI Client
+The protocol does not depend on a particular backend database; the two
+implementations use different ones.
+
+| Implementation | Backend | Notes |
+|----------------|---------|-------|
+| [MuleSoft Mule 4](docs/mule-reference.en.md) | Apache Derby (embedded) | Server & client, with an admin UI, dataset profiles and vector search |
+| [Clojure](docs/clojure-reference.en.md) | SQLite | Server & CLI client |
+
+### Dataset profiles (Mule server)
+
+The Mule server ships **dataset profiles** -- a schema bundled with its sample data --
+that can be swapped at runtime from the Profiles tab in the admin UI or through
+`POST /api/profiles/apply`.
+
+| id | Contents | Tables | Rows |
+|----|----------|--------|------|
+| `manufacturing` (default) | Materials manufacturer ERP: master data, inventory, sales, procurement, production, equipment, finance and R&D | 52 | 427 |
+| `finance` | Retail banking: branches, customers (CIF), deposit accounts, transactions, cards, lending, credit risk and AML | 25 | 2,864 |
+
+See the [Mule reference](docs/mule-reference.en.md#dataset-profiles) for details.
 
 ## Build
 
@@ -158,7 +176,14 @@ cd jdbc-driver
 JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 mvn clean install
 ```
 
-For building reference implementations, see:
+```bash
+# Mule server (fetch the ONNX model for vector search once, before building)
+cd reference/mule/clouderby-mule-server
+./download-model.sh
+JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 mvn clean package
+```
+
+For more on building the reference implementations, see:
 - [MuleSoft Mule 4](docs/mule-reference.en.md#build)
 - [Clojure](docs/clojure-reference.en.md#run)
 

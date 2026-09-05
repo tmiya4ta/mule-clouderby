@@ -184,6 +184,22 @@ public class ClouderbySessionManager {
     }
 
     /**
+     * Close every open session and return how many were closed.
+     *
+     * <p>Used when the database changes shape (a dataset profile switch): the
+     * sessions hold live Derby connections with cached PreparedStatements that
+     * would fail against tables that no longer exist, so clients are forced to
+     * reconnect rather than left holding a broken session.
+     */
+    public int closeAllSessions() {
+        int n = 0;
+        for (String id : new java.util.ArrayList<>(sessions.keySet())) {
+            if (closeSession(id)) n++;
+        }
+        return n;
+    }
+
+    /**
      * Get a connection from the DataSource for system-level queries
      * (metadata endpoints, UI endpoints that don't require a session).
      */

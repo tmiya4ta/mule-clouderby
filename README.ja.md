@@ -130,23 +130,39 @@ clouderby/
 │   └── clouderby-api.yaml
 │
 ├── jdbc-driver/              # JDBCドライバー実装
-│   └── src/main/java/com/muledev/
+│   └── src/main/java/io/gitlab/myst3m/clouderby/jdbc/
 │
 ├── reference/                # リファレンス実装
 │   ├── mule/                 # MuleSoft Mule 4
-│   │   ├── clouderby-mule-app/      # サーバー
+│   │   ├── clouderby-mule-server/   # サーバー (Apache Derby 埋め込み)
 │   │   └── clouderby-mule-client/   # クライアント
 │   └── clj/                  # Clojure
-│       ├── clouderby-clj-server/    # サーバー
-│       └── clj-client/           # CLIクライアント
+│       ├── clouderby-clj-server/    # サーバー (SQLite)
+│       └── clj-client/              # CLIクライアント
 │
 └── docs/                     # ドキュメント
 ```
 
 ## リファレンス実装
 
-- [MuleSoft Mule 4](docs/mule-reference.md) - サーバー・クライアント
-- [Clojure](docs/clojure-reference.md) - サーバー・CLIクライアント
+プロトコルはバックエンドDBに依存しません。2つの実装は別のDBを使っています。
+
+| 実装 | バックエンド | 備考 |
+|------|-------------|------|
+| [MuleSoft Mule 4](docs/mule-reference.md) | Apache Derby (埋め込み) | サーバー・クライアント。管理UI、データセットプロファイル、ベクトル検索つき |
+| [Clojure](docs/clojure-reference.md) | SQLite | サーバー・CLIクライアント |
+
+### データセットプロファイル (Mule サーバー)
+
+Muleサーバーは **スキーマ + 初期データ** をひとまとめにした「データセットプロファイル」を同梱していて、
+管理UIの Profiles タブ、または `POST /api/profiles/apply` で実行時に切り替えられます。
+
+| id | 内容 | テーブル数 | 行数 |
+|----|------|-----------|------|
+| `manufacturing` (既定) | 素材メーカーの基幹システム。マスタ・在庫・販売・購買・製造・設備・財務会計・研究開発 | 52 | 427 |
+| `finance` | リテールバンキング。拠点・顧客(CIF)・預金口座・取引・カード・融資・与信・マネロン対策 | 25 | 2,864 |
+
+詳細は [Mule リファレンス](docs/mule-reference.md#データセットプロファイル) を参照。
 
 ## ビルド
 
@@ -158,7 +174,14 @@ cd jdbc-driver
 JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 mvn clean install
 ```
 
-リファレンス実装のビルド方法は各ドキュメントを参照:
+```bash
+# Mule サーバー (ベクトル検索用ONNXモデルはビルド前に一度だけ取得)
+cd reference/mule/clouderby-mule-server
+./download-model.sh
+JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 mvn clean package
+```
+
+リファレンス実装のビルド方法の詳細は各ドキュメントを参照:
 - [MuleSoft Mule 4](docs/mule-reference.md#ビルド)
 - [Clojure](docs/clojure-reference.md#実行)
 

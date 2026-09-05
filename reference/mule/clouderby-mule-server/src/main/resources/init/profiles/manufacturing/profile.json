@@ -1,0 +1,36 @@
+{
+  "id": "manufacturing",
+  "name": "Manufacturing",
+  "nameJa": "製造業",
+  "description": "Materials manufacturer ERP: master data, inventory, sales, procurement, production, equipment, finance and R&D.",
+  "descriptionJa": "素材メーカーの基幹システム。マスタ・在庫・販売・購買・製造・設備・財務・研究開発を一通り含む。",
+  "icon": "🏭",
+  "domains": [
+    { "prefix": "MDM", "name": "Master Data", "nameJa": "マスタデータ" },
+    { "prefix": "INV", "name": "Inventory", "nameJa": "在庫・入出荷" },
+    { "prefix": "SAL", "name": "Sales", "nameJa": "販売" },
+    { "prefix": "PRC", "name": "Procurement", "nameJa": "購買" },
+    { "prefix": "MFG", "name": "Manufacturing", "nameJa": "製造" },
+    { "prefix": "EQP", "name": "Equipment", "nameJa": "設備" },
+    { "prefix": "FIN", "name": "Finance", "nameJa": "財務会計" },
+    { "prefix": "RND", "name": "R&D", "nameJa": "研究開発" }
+  ],
+  "tables": [
+    "MDM_CUSTOMERS", "MDM_PRODUCTS", "MDM_ORGANIZATIONS", "MDM_SUPPLIERS", "MDM_MATERIALS",
+    "INV_WAREHOUSES", "INV_INVENTORY",
+    "SAL_SALES_ORDERS", "SAL_SALES_ORDER_ITEMS", "SAL_QUOTATIONS", "SAL_QUOTATION_ITEMS",
+    "SAL_CONTRACTS", "SAL_PRICE_AGREEMENTS",
+    "EQP_EQUIPMENT", "EQP_FAILURES", "EQP_MAINTENANCE_PLANS", "EQP_OPERATION_LOGS",
+    "FIN_RECEIVABLES", "FIN_AR_PAYMENTS", "FIN_PAYABLES", "FIN_BUDGETS", "FIN_BUDGET_PERIODS",
+    "FIN_PRODUCT_COSTS",
+    "MFG_RECIPES", "MFG_RECIPE_PARAMETERS", "MFG_PRODUCTION_PLANS", "MFG_PRODUCTION_ORDERS",
+    "MFG_WORK_ORDERS", "MFG_PRODUCTION_RESULTS", "MFG_LOTS", "MFG_LOT_HISTORY",
+    "MFG_PROCESS_RECORDS", "MFG_INSPECTIONS", "MFG_QUALITY_INSPECTIONS",
+    "PRC_PURCHASE_REQUESTS", "PRC_PURCHASE_REQUEST_ITEMS", "PRC_PURCHASE_ORDERS",
+    "PRC_PURCHASE_ORDER_ITEMS", "PRC_GOODS_RECEIPTS", "PRC_GOODS_RECEIPT_ITEMS",
+    "INV_RECEIPTS", "INV_RECEIPT_ITEMS", "INV_SHIPMENTS", "INV_SHIPMENT_ITEMS",
+    "INV_STOCK_MOVEMENTS",
+    "RND_PROJECTS", "RND_MILESTONES", "RND_DOCUMENTS", "RND_DOCUMENT_REVISIONS",
+    "RND_PATENTS", "RND_PROTOTYPES", "RND_PROTOTYPE_EVALUATIONS"
+  ]
+}

@@ -2,7 +2,9 @@ openapi: 3.0.3
 info:
   title: clouderbyd Protocol API
   description: |
-    JDBC over HTTP/HTTPS protocol for SQLite.
+    JDBC over HTTP/HTTPS. The protocol is backend-agnostic: a server may sit in
+    front of any database. The reference implementations use Apache Derby (Mule)
+    and SQLite (Clojure).
     This API enables JDBC drivers to communicate with clouderby server over HTTP.
   version: 1.0.0
   contact:

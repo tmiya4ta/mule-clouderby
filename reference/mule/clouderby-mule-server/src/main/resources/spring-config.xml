@@ -19,6 +19,11 @@
 
     <bean id="databaseInitializer" class="com.muledev.init.DatabaseInitializer" depends-on="clouderbyDataSource">
         <property name="dataSource" ref="clouderbyDataSource"/>
+        <property name="sessionManager" ref="clouderbySessionManager"/>
+        <!-- 起動時に投入するデータセットプロファイル。未解決/空なら
+             システムプロパティ db.init.profile、次いで
+             /init/profiles.json の defaultProfile にフォールバックする -->
+        <property name="defaultProfile" value="${db.init.profile}"/>
     </bean>
 
 </beans>
