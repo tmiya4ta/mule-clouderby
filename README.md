@@ -11,13 +11,13 @@ An open protocol specification and reference implementation for JDBC over HTTP/H
 clouderby is an open protocol for "JDBC over HTTP".
 
 ```
-┌─────────────────┐                      ┌─────────────────┐
-│  Java Client    │    HTTP/HTTPS        │  Any Server     │
-│  (JDBC Driver)  │ ←─────────────────→  │  implementing   │
-│                 │   clouderby protocol    │  the protocol   │
-│ jdbc:clouderby://  │                      │       ↓         │
-└─────────────────┘                      │  Any Database   │
-                                         └─────────────────┘
+┌─────────────────────┐                        ┌─────────────────────┐
+│    Java Client      │      HTTP/HTTPS        │     Any Server      │
+│   (JDBC Driver)     │ ←────────────────────→ │    implementing     │
+│                     │   clouderby protocol   │    the protocol     │
+│ jdbc:clouderby://   │                        │          ↓          │
+└─────────────────────┘                        │    Any Database     │
+                                               └─────────────────────┘
 ```
 
 ### Components
@@ -45,6 +45,8 @@ Each HTTP endpoint maps to JDBC interface methods as follows:
 | `/statements/{id}/batch` | POST | `PreparedStatement` | `executeBatch()` |
 | `/statements/{id}/metadata` | GET | `PreparedStatement` | `getMetaData()` |
 | `/statements/{id}` | DELETE | `PreparedStatement` | `close()` |
+| `/cursors/{id}/fetch` | POST | `ResultSet` | `next()` -- fetches the next page, sized by `Statement.setFetchSize()` |
+| `/cursors/{id}` | DELETE | `ResultSet` | `close()` |
 | `/transactions/begin` | POST | `Connection` | `setAutoCommit(false)` |
 | `/transactions/commit` | POST | `Connection` | `commit()` |
 | `/transactions/rollback` | POST | `Connection` | `rollback()` |
@@ -150,7 +152,7 @@ implementations use different ones.
 
 | Implementation | Backend | Notes |
 |----------------|---------|-------|
-| [MuleSoft Mule 4](docs/mule-reference.en.md) | Apache Derby (embedded) | Server & client, with an admin UI and dataset profiles |
+| [MuleSoft Mule 4](docs/mule-reference.en.md) | Apache Derby (embedded) | Server & client, with dataset profiles and an admin UI (SQL console, DDL, ER diagram; light and dark themes) |
 | [Clojure](docs/clojure-reference.en.md) | SQLite | Server & CLI client |
 
 ### Dataset profiles (Mule server)

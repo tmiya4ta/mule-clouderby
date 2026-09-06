@@ -11,13 +11,13 @@ HTTP/HTTPS経由でJDBCを実現するプロトコル仕様とリファレンス
 clouderbyは「JDBC over HTTP」を実現するためのオープンプロトコルです。
 
 ```
-┌─────────────────┐                      ┌─────────────────┐
-│  Java Client    │    HTTP/HTTPS        │  Any Server     │
-│  (JDBC Driver)  │ ←─────────────────→  │  implementing   │
-│                 │   clouderby protocol    │  the protocol   │
-│ jdbc:clouderby://  │                      │       ↓         │
-└─────────────────┘                      │  Any Database   │
-                                         └─────────────────┘
+┌─────────────────────┐                        ┌─────────────────────┐
+│    Java Client      │      HTTP/HTTPS        │     Any Server      │
+│   (JDBC Driver)     │ ←────────────────────→ │    implementing     │
+│                     │   clouderby protocol   │    the protocol     │
+│ jdbc:clouderby://   │                        │          ↓          │
+└─────────────────────┘                        │    Any Database     │
+                                               └─────────────────────┘
 ```
 
 ### コンポーネント
@@ -45,6 +45,8 @@ clouderbyは「JDBC over HTTP」を実現するためのオープンプロトコ
 | `/statements/{id}/batch` | POST | `PreparedStatement` | `executeBatch()` |
 | `/statements/{id}/metadata` | GET | `PreparedStatement` | `getMetaData()` |
 | `/statements/{id}` | DELETE | `PreparedStatement` | `close()` |
+| `/cursors/{id}/fetch` | POST | `ResultSet` | `next()` (次ページ取得。件数は `Statement.setFetchSize()`) |
+| `/cursors/{id}` | DELETE | `ResultSet` | `close()` |
 | `/transactions/begin` | POST | `Connection` | `setAutoCommit(false)` |
 | `/transactions/commit` | POST | `Connection` | `commit()` |
 | `/transactions/rollback` | POST | `Connection` | `rollback()` |
@@ -149,7 +151,7 @@ clouderby/
 
 | 実装 | バックエンド | 備考 |
 |------|-------------|------|
-| [MuleSoft Mule 4](docs/mule-reference.md) | Apache Derby (埋め込み) | サーバー・クライアント。管理UI、データセットプロファイルつき |
+| [MuleSoft Mule 4](docs/mule-reference.md) | Apache Derby (埋め込み) | サーバー・クライアント。データセットプロファイルと管理UI (SQLコンソール・DDL・ER図、ライト/ダークテーマ) つき |
 | [Clojure](docs/clojure-reference.md) | SQLite | サーバー・CLIクライアント |
 
 ### データセットプロファイル (Mule サーバー)
